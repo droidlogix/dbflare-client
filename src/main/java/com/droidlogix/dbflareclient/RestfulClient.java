@@ -27,12 +27,27 @@ public class RestfulClient implements RestfulClientInterface
 	private String baseUrl;
 	private boolean isKeyRequired;
 	private String apiKey;
+	private Map<String, String> httpMethodMapping;
 
 	public RestfulClient(String baseUrl, boolean isKeyRequired, String apiKey)
 	{
 		this.baseUrl = baseUrl;
 		this.isKeyRequired = isKeyRequired;
 		this.apiKey = apiKey;
+		this.httpMethodMapping = new HashMap<>();
+		this.httpMethodMapping.put(HTTP_METHOD_POST, "post"); // Default Mapping
+		this.httpMethodMapping.put(HTTP_METHOD_PUT, "put"); // Default Mapping
+		this.httpMethodMapping.put(HTTP_METHOD_DELETE, "delete"); // Default Mapping
+		this.httpMethodMapping.put(HTTP_METHOD_GET, "get"); // Default Mapping
+	}
+
+	public RestfulClient(String baseUrl, boolean isKeyRequired, String apiKey, Map<String, String> httpMethodMapping)
+	{
+		this(baseUrl, isKeyRequired, apiKey);
+		this.httpMethodMapping.put(HTTP_METHOD_POST, httpMethodMapping.getOrDefault(HTTP_METHOD_POST, "post")); // Override HTTP Method Mapping
+		this.httpMethodMapping.put(HTTP_METHOD_PUT, httpMethodMapping.getOrDefault(HTTP_METHOD_PUT, "put")); // Override HTTP Method Mapping
+		this.httpMethodMapping.put(HTTP_METHOD_DELETE, httpMethodMapping.getOrDefault(HTTP_METHOD_DELETE, "delete")); // Override HTTP Method Mapping
+		this.httpMethodMapping.put(HTTP_METHOD_GET, httpMethodMapping.getOrDefault(HTTP_METHOD_GET, "get")); // Override HTTP Method Mapping
 	}
 
 	@Override
@@ -149,18 +164,6 @@ public class RestfulClient implements RestfulClientInterface
 	}
 
 	@Override
-	public <T> Page<T> zgetPage(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
-	{
-		throw new Exception("Not Implemented");
-	}
-
-	@Override
-	public <T> Page<T> zgetPage(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, Type typeOfT) throws Exception
-	{
-		throw new Exception("Not Implemented");
-	}
-
-	@Override
 	public String zgetJSON(String eid, Map<String, Object> urlParameters) throws Exception
 	{
 		Map<String, String> headers = new HashMap<>();
@@ -201,42 +204,6 @@ public class RestfulClient implements RestfulClientInterface
 	}
 
 	@Override
-	public void zexecute(String eid, Map<String, Object> urlParameters) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-		processJsonResult(httpResponse);
-	}
-
-	@Override
-	public void zexecute(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-		processJsonResult(httpResponse);
-	}
-
-	@Override
 	public <T> T zinsert(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
 	{
 		Map<String, String> headers = new HashMap<>();
@@ -247,8 +214,6 @@ public class RestfulClient implements RestfulClientInterface
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-		//logger.info("Value String :" + objectMapper.writeValueAsString(item));
-
 		Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zinsert")
 				.headers(headers)
 				.queryString("eid", eid)
@@ -268,14 +233,32 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-		Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.body(objectMapper.writeValueAsString(item))
-				.asStringAsync();
-		return processSinglePojoResult(httpResponse, typeOfT);
+		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
+		{
+			ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return processSinglePojoResult(httpResponse, typeOfT);
+		}
+		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
+		{
+			ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return processSinglePojoResult(httpResponse, typeOfT);
+		}
+		else
+		{
+			throw new Exception("Invalid HTTP METHOD Mapping");
+		}
 	}
 
 	@Override
@@ -288,12 +271,28 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		Future<HttpResponse<String>> httpResponse = Unirest.delete(getBaseUrl() + "zdelete")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-		return processSinglePojoResult(httpResponse, typeOfT);
+		if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("delete"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.delete(getBaseUrl() + "zdelete")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.asStringAsync();
+			return processSinglePojoResult(httpResponse, typeOfT);
+		}
+		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zdelete")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.asStringAsync();
+			return processSinglePojoResult(httpResponse, typeOfT);
+		}
+		else
+		{
+			throw new Exception("Invalid HTTP METHOD Mapping");
+		}
 	}
 
 	private <T> T processSinglePojoResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception

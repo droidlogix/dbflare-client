@@ -1,11 +1,14 @@
 package com.droidlogix.dbflareclient;
 
+/**
+ * This class is used as reference for result pagination
+ */
 public class PagingInformation
 {
-	private int page;
-	private long skip;
-	private int pageSize;
-	private int total;
+	private int page; // Indicator of current page
+	private long skip; // SKip record indicator
+	private int pageSize; // Number of records to return as a list
+	private int total; // Total is indicator how much total record it has in the database
 
 	public PagingInformation(int page, long skip, int pageSize)
 	{
