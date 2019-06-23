@@ -3,6 +3,7 @@ package com.droidlogix.dbflareclient;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
+import com.google.gson.reflect.TypeToken;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.HttpRequest;
@@ -51,159 +52,6 @@ public class RestfulClient implements RestfulClientInterface
 	}
 
 	@Override
-	public <T> T zgetSingle(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-		return processSinglePojoResult(httpResponse, typeOfT);
-	}
-
-	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-		return processListPojoResult(httpResponse, typeOfT);
-	}
-
-	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, Type typeOfT) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-
-		if (pagingInformation == null)
-		{
-			return processListPojoResult(httpResponse, typeOfT);
-		}
-		else
-		{
-			return processListPojoResult(httpResponse, pagingInformation, typeOfT);
-		}
-	}
-
-	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, Type typeOfT) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters);
-		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
-		{
-			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
-		}
-		Future<HttpResponse<String>> httpResponse = request.asStringAsync();
-		return processListPojoResult(httpResponse, typeOfT);
-	}
-
-	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation, Type typeOfT) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters);
-		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
-		{
-			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
-		}
-		Future<HttpResponse<String>> httpResponse = request.asStringAsync();
-		if (pagingInformation == null)
-		{
-			return processListPojoResult(httpResponse, typeOfT);
-		}
-		else
-		{
-			return processListPojoResult(httpResponse, pagingInformation, typeOfT);
-		}
-	}
-
-	@Override
-	public String zgetJSON(String eid, Map<String, Object> urlParameters) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-		return processJsonResult(httpResponse);
-	}
-
-	@Override
-	public String zgetJSON(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters);
-		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
-		{
-			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
-		}
-		Future<HttpResponse<String>> httpResponse = request.asStringAsync();
-		return processJsonResult(httpResponse);
-	}
-
-	@Override
 	public <T> T zinsert(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
 	{
 		Map<String, String> headers = new HashMap<>();
@@ -220,7 +68,7 @@ public class RestfulClient implements RestfulClientInterface
 				.queryString(urlParameters)
 				.body(objectMapper.writeValueAsString(item))
 				.asStringAsync();
-		return processSinglePojoResult(httpResponse, typeOfT);
+		return processObjectResult(httpResponse, typeOfT);
 	}
 
 	@Override
@@ -242,7 +90,7 @@ public class RestfulClient implements RestfulClientInterface
 					.queryString(urlParameters)
 					.body(objectMapper.writeValueAsString(item))
 					.asStringAsync();
-			return processSinglePojoResult(httpResponse, typeOfT);
+			return processObjectResult(httpResponse, typeOfT);
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
 		{
@@ -253,7 +101,7 @@ public class RestfulClient implements RestfulClientInterface
 					.queryString(urlParameters)
 					.body(objectMapper.writeValueAsString(item))
 					.asStringAsync();
-			return processSinglePojoResult(httpResponse, typeOfT);
+			return processObjectResult(httpResponse, typeOfT);
 		}
 		else
 		{
@@ -278,7 +126,7 @@ public class RestfulClient implements RestfulClientInterface
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processSinglePojoResult(httpResponse, typeOfT);
+			return processObjectResult(httpResponse, typeOfT);
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
 		{
@@ -287,7 +135,7 @@ public class RestfulClient implements RestfulClientInterface
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processSinglePojoResult(httpResponse, typeOfT);
+			return processObjectResult(httpResponse, typeOfT);
 		}
 		else
 		{
@@ -295,7 +143,161 @@ public class RestfulClient implements RestfulClientInterface
 		}
 	}
 
-	private <T> T processSinglePojoResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
+	@Override
+	public <T> T zgetSingle(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+		return processObjectResult(httpResponse, typeOfT);
+	}
+
+	@Override
+	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+		return processListResult(httpResponse, typeOfT);
+	}
+
+	@Override
+	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, Type typeOfT) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+
+		if (pagingInformation == null)
+		{
+			return processListResult(httpResponse, typeOfT);
+		}
+		else
+		{
+			return processListResult(httpResponse, pagingInformation, typeOfT);
+		}
+	}
+
+	@Override
+	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, Type typeOfT) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters);
+		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
+		{
+			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
+		}
+		Future<HttpResponse<String>> httpResponse = request.asStringAsync();
+		return processListResult(httpResponse, typeOfT);
+	}
+
+	@Override
+	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation, Type typeOfT) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters);
+		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
+		{
+			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
+		}
+		Future<HttpResponse<String>> httpResponse = request.asStringAsync();
+		if (pagingInformation == null)
+		{
+			return processListResult(httpResponse, typeOfT);
+		}
+		else
+		{
+			return processListResult(httpResponse, pagingInformation, typeOfT);
+		}
+	}
+
+	@Override
+	public String zgetJSON(String eid, Map<String, Object> urlParameters) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+		return processJSONResult(httpResponse);
+	}
+
+	@Override
+	public String zgetJSON(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters);
+		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
+		{
+			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
+		}
+		Future<HttpResponse<String>> httpResponse = request.asStringAsync();
+		return processJSONResult(httpResponse);
+	}
+
+
+	private <T> T processObjectResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
 	{
 		try
 		{
@@ -309,6 +311,7 @@ public class RestfulClient implements RestfulClientInterface
 				{
 					JsonObject resultObject = jsonElement.getAsJsonObject();
 					JsonElement dataMember = resultObject.getAsJsonObject("data");
+					printErrorMessagesFromDBFlare(gson, resultObject);
 					if (dataMember != null)
 					{
 						if (!dataMember.isJsonNull())
@@ -330,12 +333,12 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		catch (Exception exception)
 		{
-			logger.error(exception.getMessage());
+			throw exception;
 		}
 		throw new Exception("Error processing your request");
 	}
 
-	private <T> List<T> processListPojoResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
+	private <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
 	{
 		try
 		{
@@ -346,6 +349,7 @@ public class RestfulClient implements RestfulClientInterface
 				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
 				JsonObject resultObject = jsonElement.getAsJsonObject();
 				JsonArray dataMember = resultObject.getAsJsonArray("data");
+				printErrorMessagesFromDBFlare(gson, resultObject);
 				if (!dataMember.isJsonNull())
 				{
 					if (dataMember.isJsonArray())
@@ -358,13 +362,12 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		catch (Exception exception)
 		{
-			logger.error(exception.getMessage());
-			exception.printStackTrace();
+			throw exception;
 		}
 		throw new Exception("Error processing your request");
 	}
 
-	private <T> List<T> processListPojoResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception
+	private <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception
 	{
 		try
 		{
@@ -376,6 +379,7 @@ public class RestfulClient implements RestfulClientInterface
 				JsonObject resultObject = jsonElement.getAsJsonObject();
 				JsonArray dataMember = resultObject.getAsJsonArray("data");
 				pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
+				printErrorMessagesFromDBFlare(gson, resultObject);
 				if (!dataMember.isJsonNull())
 				{
 					if (dataMember.isJsonArray())
@@ -383,47 +387,19 @@ public class RestfulClient implements RestfulClientInterface
 						return gson.fromJson(dataMember, typeOfT);
 					}
 				}
+
+
 				return new ArrayList<>();
 			}
 		}
 		catch (Exception exception)
 		{
-			logger.error(exception.getMessage());
-			exception.printStackTrace();
+			throw exception;
 		}
 		throw new Exception("Error processing your request");
 	}
 
-	private <T> Page<T> processPageResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
-	{
-		try
-		{
-			HttpResponse<String> result = httpResponse.get();
-			if (result.getStatus() >= 200 && result.getStatus() <= 299)
-			{
-				Gson gson = getGsonWithSerializerDeserializer();
-				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				JsonObject resultObject = jsonElement.getAsJsonObject();
-				JsonArray dataMember = resultObject.getAsJsonArray("data");
-				if (!dataMember.isJsonNull())
-				{
-					if (dataMember.isJsonArray())
-					{
-						return new Page<>(gson.fromJson(dataMember, typeOfT), resultObject.getAsJsonPrimitive("total").getAsInt());
-					}
-				}
-				return new Page<>();
-			}
-		}
-		catch (Exception exception)
-		{
-			logger.error(exception.getMessage());
-			exception.printStackTrace();
-		}
-		throw new Exception("Error processing your request");
-	}
-
-	private String processJsonResult(Future<HttpResponse<String>> httpResponse) throws Exception
+	private String processJSONResult(Future<HttpResponse<String>> httpResponse) throws Exception
 	{
 		try
 		{
@@ -437,16 +413,22 @@ public class RestfulClient implements RestfulClientInterface
 					JsonArray mainJsonObject = jsonElement.getAsJsonArray();
 					return mainJsonObject.toString();
 				}
-				else
+				else if(jsonElement.isJsonObject())
 				{
 					JsonObject mainJsonObject = jsonElement.getAsJsonObject();
+					printErrorMessagesFromDBFlare(gson, mainJsonObject);
 					return mainJsonObject.toString();
+				}
+				else if(jsonElement.isJsonPrimitive())
+				{
+					JsonPrimitive jsonPrimitive = jsonElement.getAsJsonPrimitive();
+					return jsonPrimitive.getAsString();
 				}
 			}
 		}
 		catch (Exception exception)
 		{
-			logger.error(exception.getMessage());
+			throw exception;
 		}
 		throw new Exception("Error processing your request ");
 	}
@@ -503,6 +485,34 @@ public class RestfulClient implements RestfulClientInterface
 				return baseUrl + "/";
 		}
 		return baseUrl;
+	}
+
+	public void printErrorMessagesFromDBFlare(Gson gson, JsonObject jsonObject)
+	{
+		try
+		{
+			JsonArray jsonArray = jsonObject.getAsJsonArray("errors");
+			if (!jsonArray.isJsonNull())
+			{
+				if (jsonArray.isJsonArray())
+				{
+					List<String> errors = gson.fromJson(jsonArray, new TypeToken<List<String>>()
+					{
+					}.getType());
+					if (errors != null && !errors.isEmpty())
+					{
+						for (String item : errors)
+						{
+							logger.error("RestfulClient::printErrorMessagesFromDBFlare " + item);
+						}
+					}
+				}
+			}
+		}
+		catch(Exception exception)
+		{
+			logger.error("RestfulClient::printErrorMessagesFromDBFlare " + exception.getMessage());
+		}
 	}
 
 	public void setBaseUrl(String baseUrl)
