@@ -1,5 +1,6 @@
 package com.droidlogix.dbflareclient;
 
+import com.droidlogix.dbflareclient.exceptions.DbFlareCommException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
@@ -24,7 +25,6 @@ import java.util.concurrent.Future;
  */
 public class RestfulClient implements RestfulClientInterface
 {
-	private static Logger logger = LoggerFactory.getLogger(RestfulClient.class);
 	private String baseUrl;
 	private boolean isKeyRequired;
 	private String apiKey;
@@ -296,7 +296,6 @@ public class RestfulClient implements RestfulClientInterface
 		return processJSONResult(httpResponse);
 	}
 
-
 	private <T> T processObjectResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
 	{
 		try
@@ -311,7 +310,6 @@ public class RestfulClient implements RestfulClientInterface
 				{
 					JsonObject resultObject = jsonElement.getAsJsonObject();
 					JsonElement dataMember = resultObject.getAsJsonObject("data");
-					printErrorMessagesFromDBFlare(gson, resultObject);
 					if (dataMember != null)
 					{
 						if (!dataMember.isJsonNull())
@@ -349,7 +347,6 @@ public class RestfulClient implements RestfulClientInterface
 				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
 				JsonObject resultObject = jsonElement.getAsJsonObject();
 				JsonArray dataMember = resultObject.getAsJsonArray("data");
-				printErrorMessagesFromDBFlare(gson, resultObject);
 				if (!dataMember.isJsonNull())
 				{
 					if (dataMember.isJsonArray())
@@ -379,7 +376,6 @@ public class RestfulClient implements RestfulClientInterface
 				JsonObject resultObject = jsonElement.getAsJsonObject();
 				JsonArray dataMember = resultObject.getAsJsonArray("data");
 				pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
-				printErrorMessagesFromDBFlare(gson, resultObject);
 				if (!dataMember.isJsonNull())
 				{
 					if (dataMember.isJsonArray())
@@ -416,7 +412,6 @@ public class RestfulClient implements RestfulClientInterface
 				else if(jsonElement.isJsonObject())
 				{
 					JsonObject mainJsonObject = jsonElement.getAsJsonObject();
-					printErrorMessagesFromDBFlare(gson, mainJsonObject);
 					return mainJsonObject.toString();
 				}
 				else if(jsonElement.isJsonPrimitive())
@@ -485,34 +480,6 @@ public class RestfulClient implements RestfulClientInterface
 				return baseUrl + "/";
 		}
 		return baseUrl;
-	}
-
-	public void printErrorMessagesFromDBFlare(Gson gson, JsonObject jsonObject)
-	{
-		try
-		{
-			JsonArray jsonArray = jsonObject.getAsJsonArray("errors");
-			if (!jsonArray.isJsonNull())
-			{
-				if (jsonArray.isJsonArray())
-				{
-					List<String> errors = gson.fromJson(jsonArray, new TypeToken<List<String>>()
-					{
-					}.getType());
-					if (errors != null && !errors.isEmpty())
-					{
-						for (String item : errors)
-						{
-							logger.error("RestfulClient::printErrorMessagesFromDBFlare " + item);
-						}
-					}
-				}
-			}
-		}
-		catch(Exception exception)
-		{
-			logger.error("RestfulClient::printErrorMessagesFromDBFlare " + exception.getMessage());
-		}
 	}
 
 	public void setBaseUrl(String baseUrl)
