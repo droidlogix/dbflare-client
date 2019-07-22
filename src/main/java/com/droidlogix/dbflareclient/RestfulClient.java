@@ -25,6 +25,7 @@ import java.util.concurrent.Future;
  */
 public class RestfulClient implements RestfulClientInterface
 {
+
 	private String baseUrl;
 	private boolean isKeyRequired;
 	private String apiKey;
@@ -296,6 +297,82 @@ public class RestfulClient implements RestfulClientInterface
 		return processJSONResult(httpResponse);
 	}
 
+	@Override
+	public String zgetString(String eid, Map<String, Object> urlParameters) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(httpResponse);
+		return jsonPrimitive.getAsString();
+	}
+
+	@Override
+	public long zgetInteger(String eid, Map<String, Object> urlParameters) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(httpResponse);
+		return jsonPrimitive.getAsInt();
+	}
+
+	@Override
+	public long zgetLong(String eid, Map<String, Object> urlParameters) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(httpResponse);
+		return jsonPrimitive.getAsLong();
+	}
+
+	@Override
+	public double zgetDouble(String eid, Map<String, Object> urlParameters) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(httpResponse);
+		return jsonPrimitive.getAsDouble();
+	}
+
 	private <T> T processObjectResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
 	{
 		try
@@ -426,6 +503,33 @@ public class RestfulClient implements RestfulClientInterface
 			throw exception;
 		}
 		throw new Exception("Error processing your request ");
+	}
+
+	private JsonPrimitive processJsonPrimitiveResult(Future<HttpResponse<String>> httpResponse) throws Exception
+	{
+		try
+		{
+			HttpResponse<String> result = httpResponse.get();
+			if (result.getStatus() >= 200 && result.getStatus() <= 299)
+			{
+				Gson gson = getGsonWithSerializerDeserializer();
+				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
+				if(jsonElement.isJsonPrimitive())
+				{
+					JsonPrimitive jsonPrimitive = jsonElement.getAsJsonPrimitive();
+					return jsonPrimitive;
+				}
+				else
+				{
+					throw new Exception("Result is not primitive");
+				}
+			}
+		}
+		catch (Exception exception)
+		{
+			throw exception;
+		}
+		throw new Exception("Error processing your request");
 	}
 
 	private Gson getGsonWithSerializerDeserializer()

@@ -85,6 +85,42 @@ public interface RestfulClientInterface
 	String zgetJSON(String eid, Map<String, Object> urlParameters) throws Exception;
 
 	/**
+	 * Get the result as String
+	 * @param eid
+	 * @param urlParameters
+	 * @return int
+	 * @throws Exception
+	 */
+	String zgetString(String eid, Map<String, Object> urlParameters) throws Exception;
+
+	/**
+	 * Get the result as String
+	 * @param eid
+	 * @param urlParameters
+	 * @return String
+	 * @throws Exception
+	 */
+	long zgetInteger(String eid, Map<String, Object> urlParameters) throws Exception;
+
+	/**
+	 * Get the result as long
+	 * @param eid
+	 * @param urlParameters
+	 * @return long
+	 * @throws Exception
+	 */
+	long zgetLong(String eid, Map<String, Object> urlParameters) throws Exception;
+
+	/**
+	 * Get the result as double
+	 * @param eid
+	 * @param urlParameters
+	 * @return long
+	 * @throws Exception
+	 */
+	double zgetDouble(String eid, Map<String, Object> urlParameters) throws Exception;
+
+	/**
 	 * Get the result as JSON String
 	 * @param eid
 	 * @param urlParameters
