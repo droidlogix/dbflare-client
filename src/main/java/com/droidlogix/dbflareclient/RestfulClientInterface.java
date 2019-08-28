@@ -144,6 +144,17 @@ public interface RestfulClientInterface
 	<T> T zinsert(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception;
 
 	/**
+	 * Insert a record and expect the generated record as a result
+	 * @param eid
+	 * @param urlParameters
+	 * @param item
+	 * @param <T>
+	 * @return
+	 * @throws Exception
+	 */
+	<T> Map<String, Object> zinsert(String eid, Map<String, Object> urlParameters, T item) throws Exception;
+
+	/**
 	 * Update a record and expect the updated record as a result.
 	 * @param eid
 	 * @param urlParameters
@@ -156,6 +167,17 @@ public interface RestfulClientInterface
 	<T> T zupdate(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception;
 
 	/**
+	 * Update a record and expect the updated record as a result.
+	 * @param eid
+	 * @param urlParameters
+	 * @param item
+	 * @param <T>
+	 * @return
+	 * @throws Exception
+	 */
+	<T> Map<String, Object> zupdate(String eid, Map<String, Object> urlParameters, T item) throws Exception;
+
+	/**
 	 * Delete a record and expect the deleted record as a result
 	 * @param eid
 	 * @param urlParameters
@@ -164,4 +186,14 @@ public interface RestfulClientInterface
 	 * @throws Exception
 	 */
 	<T> T zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception;
+
+	/**
+	 * Delete a record and expect the deleted record as a result
+	 * @param eid
+	 * @param urlParameters
+	 * @param <T>
+	 * @return
+	 * @throws Exception
+	 */
+	Map<String, Object> zdelete(String eid, Map<String, Object> urlParameters) throws Exception;
 }

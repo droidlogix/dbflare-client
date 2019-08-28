@@ -73,6 +73,26 @@ public class RestfulClient implements RestfulClientInterface
 	}
 
 	@Override
+	public <T> Map<String, Object> zinsert(String eid, Map<String, Object> urlParameters, T item) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+		Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zinsert")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.body(objectMapper.writeValueAsString(item))
+				.asStringAsync();
+		return processObjectResult(httpResponse);
+	}
+
+	@Override
 	public <T> T zupdate(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
 	{
 		Map<String, String> headers = new HashMap<>();
@@ -111,6 +131,44 @@ public class RestfulClient implements RestfulClientInterface
 	}
 
 	@Override
+	public <T> Map<String, Object> zupdate(String eid, Map<String, Object> urlParameters, T item) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
+		{
+			ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return processObjectResult(httpResponse);
+		}
+		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
+		{
+			ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return processObjectResult(httpResponse);
+		}
+		else
+		{
+			throw new Exception("Invalid HTTP METHOD Mapping");
+		}
+	}
+
+	@Override
 	public <T> T zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
 	{
 		Map<String, String> headers = new HashMap<>();
@@ -137,6 +195,40 @@ public class RestfulClient implements RestfulClientInterface
 					.queryString(urlParameters)
 					.asStringAsync();
 			return processObjectResult(httpResponse, typeOfT);
+		}
+		else
+		{
+			throw new Exception("Invalid HTTP METHOD Mapping");
+		}
+	}
+
+	@Override
+	public Map<String, Object> zdelete(String eid, Map<String, Object> urlParameters) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("delete"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.delete(getBaseUrl() + "zdelete")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.asStringAsync();
+			return processObjectResult(httpResponse);
+		}
+		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zdelete")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.asStringAsync();
+			return processObjectResult(httpResponse);
 		}
 		else
 		{
@@ -401,6 +493,46 @@ public class RestfulClient implements RestfulClientInterface
 					else
 					{
 						return gson.fromJson(resultObject, typeOfT);
+					}
+				}
+				return null;
+			}
+		}
+		catch (Exception exception)
+		{
+			throw exception;
+		}
+		throw new Exception("Error processing your request");
+	}
+
+	private Map<String, Object> processObjectResult(Future<HttpResponse<String>> httpResponse) throws Exception
+	{
+		try
+		{
+			HttpResponse<String> result = httpResponse.get();
+			if (result.getStatus() >= 200 && result.getStatus() <= 299)
+			{
+				Gson gson = getGsonWithSerializerDeserializer();
+				String jsonString = result.getBody();
+				JsonElement jsonElement = gson.fromJson(jsonString, JsonElement.class);
+				if (!jsonString.equalsIgnoreCase("null") && !jsonString.contains("\"data\":null") && jsonElement != null)
+				{
+					JsonObject resultObject = jsonElement.getAsJsonObject();
+					JsonElement dataMember = resultObject.getAsJsonObject("data");
+					if (dataMember != null)
+					{
+						if (!dataMember.isJsonNull())
+						{
+							return gson.fromJson(dataMember, new TypeToken<Map<String, Object>>(){}.getType());
+						}
+						else
+						{
+							return gson.fromJson(resultObject, new TypeToken<Map<String, Object>>(){}.getType());
+						}
+					}
+					else
+					{
+						return gson.fromJson(resultObject, new TypeToken<Map<String, Object>>(){}.getType());
 					}
 				}
 				return null;
