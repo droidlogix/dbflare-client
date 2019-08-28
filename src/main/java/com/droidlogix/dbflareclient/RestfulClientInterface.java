@@ -191,7 +191,6 @@ public interface RestfulClientInterface
 	 * Delete a record and expect the deleted record as a result
 	 * @param eid
 	 * @param urlParameters
-	 * @param <T>
 	 * @return
 	 * @throws Exception
 	 */
