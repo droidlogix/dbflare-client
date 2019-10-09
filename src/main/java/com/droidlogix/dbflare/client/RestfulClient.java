@@ -1,6 +1,5 @@
-package com.droidlogix.dbflareclient;
+package com.droidlogix.dbflare.client;
 
-import com.droidlogix.dbflareclient.exceptions.DbFlareCommException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
@@ -9,8 +8,6 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.HttpRequest;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.text.DateFormat;
@@ -20,19 +17,20 @@ import java.util.*;
 import java.util.concurrent.Future;
 
 /**
- * Created by mrprintedwall on 11/15/16.
- * Modified by mrprintedwall on 03/17/19.
+ * @author John Pili
+ * @since 2016-11-15
  */
-public class RestfulClient implements RestfulClientInterface
+public class RestfulClient implements IRestfulClient, IResultProcessor
 {
-
+	private ObjectMapper objectMapper;
 	private String baseUrl;
 	private boolean isKeyRequired;
 	private String apiKey;
 	private Map<String, String> httpMethodMapping;
 
-	public RestfulClient(String baseUrl, boolean isKeyRequired, String apiKey)
+	public RestfulClient(ObjectMapper objectMapper, String baseUrl, boolean isKeyRequired, String apiKey)
 	{
+		this.objectMapper = objectMapper;
 		this.baseUrl = baseUrl;
 		this.isKeyRequired = isKeyRequired;
 		this.apiKey = apiKey;
@@ -43,9 +41,9 @@ public class RestfulClient implements RestfulClientInterface
 		this.httpMethodMapping.put(HTTP_METHOD_GET, "get"); // Default Mapping
 	}
 
-	public RestfulClient(String baseUrl, boolean isKeyRequired, String apiKey, Map<String, String> httpMethodMapping)
+	public RestfulClient(ObjectMapper objectMapper, String baseUrl, boolean isKeyRequired, String apiKey, Map<String, String> httpMethodMapping)
 	{
-		this(baseUrl, isKeyRequired, apiKey);
+		this(objectMapper, baseUrl, isKeyRequired, apiKey);
 		this.httpMethodMapping.put(HTTP_METHOD_POST, httpMethodMapping.getOrDefault(HTTP_METHOD_POST, "post")); // Override HTTP Method Mapping
 		this.httpMethodMapping.put(HTTP_METHOD_PUT, httpMethodMapping.getOrDefault(HTTP_METHOD_PUT, "put")); // Override HTTP Method Mapping
 		this.httpMethodMapping.put(HTTP_METHOD_DELETE, httpMethodMapping.getOrDefault(HTTP_METHOD_DELETE, "delete")); // Override HTTP Method Mapping
@@ -62,7 +60,7 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+		//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 		Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zinsert")
 				.headers(headers)
 				.queryString("eid", eid)
@@ -82,7 +80,7 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+		//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 		Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zinsert")
 				.headers(headers)
 				.queryString("eid", eid)
@@ -104,7 +102,7 @@ public class RestfulClient implements RestfulClientInterface
 
 		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
 		{
-			ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+			//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
 					.headers(headers)
 					.queryString("eid", eid)
@@ -115,7 +113,7 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
 		{
-			ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+			//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
 					.headers(headers)
 					.queryString("eid", eid)
@@ -142,7 +140,7 @@ public class RestfulClient implements RestfulClientInterface
 
 		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
 		{
-			ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+			//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
 					.headers(headers)
 					.queryString("eid", eid)
@@ -153,7 +151,7 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
 		{
-			ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+			//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
 					.headers(headers)
 					.queryString("eid", eid)
@@ -465,47 +463,42 @@ public class RestfulClient implements RestfulClientInterface
 		return jsonPrimitive.getAsDouble();
 	}
 
-	private <T> T processObjectResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
+	@Override
+	public <T> T processObjectResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
 	{
-		try
+		HttpResponse<String> result = httpResponse.get();
+		if (result.getStatus() >= 200 && result.getStatus() <= 299)
 		{
-			HttpResponse<String> result = httpResponse.get();
-			if (result.getStatus() >= 200 && result.getStatus() <= 299)
+			Gson gson = getGsonWithSerializerDeserializer();
+			String jsonString = result.getBody();
+			JsonElement jsonElement = gson.fromJson(jsonString, JsonElement.class);
+			if (!jsonString.equalsIgnoreCase("null") && !jsonString.contains("\"data\":null") && jsonElement != null)
 			{
-				Gson gson = getGsonWithSerializerDeserializer();
-				String jsonString = result.getBody();
-				JsonElement jsonElement = gson.fromJson(jsonString, JsonElement.class);
-				if (!jsonString.equalsIgnoreCase("null") && !jsonString.contains("\"data\":null") && jsonElement != null)
+				JsonObject resultObject = jsonElement.getAsJsonObject();
+				JsonElement dataMember = resultObject.getAsJsonObject("data");
+				if (dataMember != null)
 				{
-					JsonObject resultObject = jsonElement.getAsJsonObject();
-					JsonElement dataMember = resultObject.getAsJsonObject("data");
-					if (dataMember != null)
+					if (!dataMember.isJsonNull())
 					{
-						if (!dataMember.isJsonNull())
-						{
-							return gson.fromJson(dataMember, typeOfT);
-						}
-						else
-						{
-							return gson.fromJson(resultObject, typeOfT);
-						}
+						return gson.fromJson(dataMember, typeOfT);
 					}
 					else
 					{
 						return gson.fromJson(resultObject, typeOfT);
 					}
 				}
-				return null;
+				else
+				{
+					return gson.fromJson(resultObject, typeOfT);
+				}
 			}
-		}
-		catch (Exception exception)
-		{
-			throw exception;
+			return null;
 		}
 		throw new Exception("Error processing your request");
 	}
 
-	private Map<String, Object> processObjectResult(Future<HttpResponse<String>> httpResponse) throws Exception
+	@Override
+	public Map<String, Object> processObjectResult(Future<HttpResponse<String>> httpResponse) throws Exception
 	{
 		try
 		{
@@ -523,16 +516,22 @@ public class RestfulClient implements RestfulClientInterface
 					{
 						if (!dataMember.isJsonNull())
 						{
-							return gson.fromJson(dataMember, new TypeToken<Map<String, Object>>(){}.getType());
+							return gson.fromJson(dataMember, new TypeToken<Map<String, Object>>()
+							{
+							}.getType());
 						}
 						else
 						{
-							return gson.fromJson(resultObject, new TypeToken<Map<String, Object>>(){}.getType());
+							return gson.fromJson(resultObject, new TypeToken<Map<String, Object>>()
+							{
+							}.getType());
 						}
 					}
 					else
 					{
-						return gson.fromJson(resultObject, new TypeToken<Map<String, Object>>(){}.getType());
+						return gson.fromJson(resultObject, new TypeToken<Map<String, Object>>()
+						{
+						}.getType());
 					}
 				}
 				return null;
@@ -545,7 +544,8 @@ public class RestfulClient implements RestfulClientInterface
 		throw new Exception("Error processing your request");
 	}
 
-	private <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
+	@Override
+	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
 	{
 		try
 		{
@@ -568,12 +568,13 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		catch (Exception exception)
 		{
-			throw exception;
+			throw new Exception(exception.getMessage(), exception.getCause());
 		}
 		throw new Exception("Error processing your request");
 	}
 
-	private <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception
+	@Override
+	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception
 	{
 		try
 		{
@@ -604,7 +605,8 @@ public class RestfulClient implements RestfulClientInterface
 		throw new Exception("Error processing your request");
 	}
 
-	private String processJSONResult(Future<HttpResponse<String>> httpResponse) throws Exception
+	@Override
+	public String processJSONResult(Future<HttpResponse<String>> httpResponse) throws Exception
 	{
 		try
 		{
@@ -618,12 +620,12 @@ public class RestfulClient implements RestfulClientInterface
 					JsonArray mainJsonObject = jsonElement.getAsJsonArray();
 					return mainJsonObject.toString();
 				}
-				else if(jsonElement.isJsonObject())
+				else if (jsonElement.isJsonObject())
 				{
 					JsonObject mainJsonObject = jsonElement.getAsJsonObject();
 					return mainJsonObject.toString();
 				}
-				else if(jsonElement.isJsonPrimitive())
+				else if (jsonElement.isJsonPrimitive())
 				{
 					JsonPrimitive jsonPrimitive = jsonElement.getAsJsonPrimitive();
 					return jsonPrimitive.getAsString();
@@ -632,34 +634,27 @@ public class RestfulClient implements RestfulClientInterface
 		}
 		catch (Exception exception)
 		{
-			throw exception;
+			throw new Exception(exception.getMessage(), exception.getCause());
 		}
 		throw new Exception("Error processing your request ");
 	}
 
-	private JsonPrimitive processJsonPrimitiveResult(Future<HttpResponse<String>> httpResponse) throws Exception
+	@Override
+	public JsonPrimitive processJsonPrimitiveResult(Future<HttpResponse<String>> httpResponse) throws Exception
 	{
-		try
+		HttpResponse<String> result = httpResponse.get();
+		if (result.getStatus() >= 200 && result.getStatus() <= 299)
 		{
-			HttpResponse<String> result = httpResponse.get();
-			if (result.getStatus() >= 200 && result.getStatus() <= 299)
+			Gson gson = getGsonWithSerializerDeserializer();
+			JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
+			if (jsonElement.isJsonPrimitive())
 			{
-				Gson gson = getGsonWithSerializerDeserializer();
-				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				if(jsonElement.isJsonPrimitive())
-				{
-					JsonPrimitive jsonPrimitive = jsonElement.getAsJsonPrimitive();
-					return jsonPrimitive;
-				}
-				else
-				{
-					throw new Exception("Result is not primitive");
-				}
+				return jsonElement.getAsJsonPrimitive();
 			}
-		}
-		catch (Exception exception)
-		{
-			throw exception;
+			else
+			{
+				throw new Exception("Result is not primitive");
+			}
 		}
 		throw new Exception("Error processing your request");
 	}

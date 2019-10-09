@@ -1,4 +1,4 @@
-package com.droidlogix.dbflareclient.exceptions;
+package com.droidlogix.dbflare.client.exceptions;
 
 public class DbFlareCommException extends Exception
 {

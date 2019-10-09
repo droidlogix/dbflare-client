@@ -1,4 +1,4 @@
-package com.droidlogix.dbflareclient;
+package com.droidlogix.dbflare.client;
 
 /**
  * This class is used as reference for result pagination
