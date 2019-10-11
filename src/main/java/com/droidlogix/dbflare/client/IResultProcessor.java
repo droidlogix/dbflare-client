@@ -32,7 +32,11 @@ public interface IResultProcessor
 
 	<T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception;
 
+	<T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception;
+
 	<T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception;
+
+	<T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception;
 
 	String processJSONResult(Future<HttpResponse<String>> httpResponse) throws Exception;
 

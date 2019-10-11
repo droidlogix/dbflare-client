@@ -574,6 +574,37 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 	}
 
 	@Override
+	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception
+	{
+		try
+		{
+			HttpResponse<String> result = httpResponse.get();
+			if (result.getStatus() >= 200 && result.getStatus() <= 299)
+			{
+				Gson gson = getGsonWithSerializerDeserializer();
+				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
+				JsonObject resultObject = jsonElement.getAsJsonObject();
+				JsonArray dataMember = resultObject.getAsJsonArray("data");
+				if (!dataMember.isJsonNull())
+				{
+					List<T> tmpList = new ArrayList<>();
+					while(dataMember.iterator().hasNext())
+					{
+						tmpList.add(objectAssembler.assemble(dataMember.iterator().next()));
+					}
+					return tmpList;
+				}
+				return new ArrayList<>();
+			}
+		}
+		catch (Exception exception)
+		{
+			throw new Exception(exception.getMessage(), exception.getCause());
+		}
+		throw new Exception("Error processing your request");
+	}
+
+	@Override
 	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception
 	{
 		try
@@ -593,8 +624,6 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 						return gson.fromJson(dataMember, typeOfT);
 					}
 				}
-
-
 				return new ArrayList<>();
 			}
 		}
@@ -603,6 +632,12 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 			throw exception;
 		}
 		throw new Exception("Error processing your request");
+	}
+
+	@Override
+	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception
+	{
+		return null;
 	}
 
 	@Override
