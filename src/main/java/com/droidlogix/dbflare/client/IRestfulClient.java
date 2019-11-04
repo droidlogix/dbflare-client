@@ -29,6 +29,8 @@ public interface IRestfulClient
 	 */
 	<T> T zinsert(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception;
 
+	<T> List<T> zinsert(String eid, Map<String, Object> urlParameters, List<T> item, Type typeOfT) throws Exception;
+
 	/**
 	 * Insert a record and expect the generated record as a result
 	 * @param eid
@@ -39,6 +41,8 @@ public interface IRestfulClient
 	 * @throws Exception
 	 */
 	<T> Map<String, Object> zinsert(String eid, Map<String, Object> urlParameters, T item) throws Exception;
+
+	<T> List<Map<String, Object>> zinsert(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception;
 
 	/**
 	 * Update a record and expect the updated record as a result.
@@ -70,7 +74,7 @@ public interface IRestfulClient
 	 * @return T result
 	 * @throws Exception
 	 */
-	<T> T zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception;
+	<T> List<T> zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception;
 
 	/**
 	 * Delete a record and expect the deleted record as a result
@@ -79,7 +83,7 @@ public interface IRestfulClient
 	 * @return
 	 * @throws Exception
 	 */
-	Map<String, Object> zdelete(String eid, Map<String, Object> urlParameters) throws Exception;
+	List<Map<String, Object>> zdelete(String eid, Map<String, Object> urlParameters) throws Exception;
 
 	/**
 	 * Get result as Object of T
@@ -91,6 +95,8 @@ public interface IRestfulClient
 	 */
 	<T> T zgetSingle(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception;
 
+	<T> T zgetSingle(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception;
+
 	/**
 	 * Get result as List of T
 	 * @param eid
@@ -100,6 +106,8 @@ public interface IRestfulClient
 	 * @throws Exception
 	 */
 	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception;
+
+	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception;
 
 	/**
 	 * Get result as List of T. PagingInformation used as reference helps in paginating the results
@@ -113,6 +121,8 @@ public interface IRestfulClient
 	 */
 	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, Type typeOfT) throws Exception;
 
+	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception;
+
 	/**
 	 *  Get result as List of T. urlParameters2 is used for sending query parameters as collection. It is very useful in multiple filter query.
 	 * @param eid
@@ -125,6 +135,9 @@ public interface IRestfulClient
 	 */
 	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters,
 	                     Map<String, Collection<?>> urlParameters2, Type typeOfT) throws Exception;
+
+	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters,
+	                     Map<String, Collection<?>> urlParameters2, IObjectAssembler objectAssembler) throws Exception;
 
 	/**
 	 * Get result as List of T. urlParameters2 is used for sending query parameters as collection. It is very useful in multiple filter query.

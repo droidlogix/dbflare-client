@@ -21,9 +21,10 @@ public interface IResultProcessor
 	 */
 	<T> T processObjectResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception;
 
+	<T> T processObjectResult(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception;
+
 	/**
 	 * Convert DbFlare result to Map
-	 *
 	 * @param httpResponse
 	 * @return
 	 * @throws Exception

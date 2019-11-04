@@ -1,6 +1,5 @@
 package com.droidlogix.dbflare.client;
 
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
@@ -20,7 +19,7 @@ import java.util.concurrent.Future;
  * @author John Pili
  * @since 2016-11-15
  */
-public class RestfulClient implements IRestfulClient, IResultProcessor
+public class DbFlareClient implements IRestfulClient, IResultProcessor
 {
 	private ObjectMapper objectMapper;
 	private String baseUrl;
@@ -28,7 +27,74 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 	private String apiKey;
 	private Map<String, String> httpMethodMapping;
 
-	public RestfulClient(ObjectMapper objectMapper, String baseUrl, boolean isKeyRequired, String apiKey)
+	//region BUILDER
+
+	public static class Config
+	{
+		private ObjectMapper objectMapper;
+		private String baseUrl;
+		private boolean isKeyRequired;
+		private String apiKey;
+		private Map<String, String> httpMethodMapping;
+
+		public Config objectMapper(ObjectMapper objectMapper)
+		{
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
+		public Config baseUrl(String baseUrl)
+		{
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Config isKeyRequired(boolean isKeyRequired)
+		{
+			this.isKeyRequired = isKeyRequired;
+			return this;
+		}
+
+		public Config apiKey(String apiKey)
+		{
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Config httpMethodMapping(Map<String, String> httpMethodMapping)
+		{
+			if (httpMethodMapping != null)
+			{
+				this.httpMethodMapping.put(HTTP_METHOD_POST, httpMethodMapping.getOrDefault(HTTP_METHOD_POST, "post")); // Override HTTP Method Mapping
+				this.httpMethodMapping.put(HTTP_METHOD_PUT, httpMethodMapping.getOrDefault(HTTP_METHOD_PUT, "put")); // Override HTTP Method Mapping
+				this.httpMethodMapping.put(HTTP_METHOD_DELETE, httpMethodMapping.getOrDefault(HTTP_METHOD_DELETE, "delete")); // Override HTTP Method Mapping
+				this.httpMethodMapping.put(HTTP_METHOD_GET, httpMethodMapping.getOrDefault(HTTP_METHOD_GET, "get")); // Override HTTP Method Mapping
+			}
+			else
+			{
+				this.httpMethodMapping = null;
+			}
+			return this;
+		}
+
+		public DbFlareClient build()
+		{
+			if (this.httpMethodMapping == null)
+			{
+				return new DbFlareClient(this.objectMapper, this.baseUrl, this.isKeyRequired, this.apiKey);
+			}
+			else
+			{
+				return new DbFlareClient(this.objectMapper, this.baseUrl, this.isKeyRequired, this.apiKey, this.httpMethodMapping);
+			}
+		}
+	}
+
+	//endregion
+
+	//region CONSTRUCTOR
+
+	private DbFlareClient(ObjectMapper objectMapper, String baseUrl, boolean isKeyRequired, String apiKey)
 	{
 		this.objectMapper = objectMapper;
 		this.baseUrl = baseUrl;
@@ -41,7 +107,7 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 		this.httpMethodMapping.put(HTTP_METHOD_GET, "get"); // Default Mapping
 	}
 
-	public RestfulClient(ObjectMapper objectMapper, String baseUrl, boolean isKeyRequired, String apiKey, Map<String, String> httpMethodMapping)
+	private DbFlareClient(ObjectMapper objectMapper, String baseUrl, boolean isKeyRequired, String apiKey, Map<String, String> httpMethodMapping)
 	{
 		this(objectMapper, baseUrl, isKeyRequired, apiKey);
 		this.httpMethodMapping.put(HTTP_METHOD_POST, httpMethodMapping.getOrDefault(HTTP_METHOD_POST, "post")); // Override HTTP Method Mapping
@@ -50,8 +116,27 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 		this.httpMethodMapping.put(HTTP_METHOD_GET, httpMethodMapping.getOrDefault(HTTP_METHOD_GET, "get")); // Override HTTP Method Mapping
 	}
 
+	//endregion
+
+	//region TRANSACTION
+
+
 	@Override
 	public <T> T zinsert(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
+	{
+		List<T> payload = new ArrayList<>();
+		payload.add(item);
+
+		List<T> result = zinsert(eid, urlParameters, payload, typeOfT);
+		if(result != null && !result.isEmpty())
+		{
+			return result.get(0);
+		}
+		return null;
+	}
+
+	@Override
+	public <T> List<T> zinsert(String eid, Map<String, Object> urlParameters, List<T> item, Type typeOfT) throws Exception
 	{
 		Map<String, String> headers = new HashMap<>();
 		if (isKeyRequired)
@@ -67,12 +152,26 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 				.queryString(urlParameters)
 				.body(objectMapper.writeValueAsString(item))
 				.asStringAsync();
-		return processObjectResult(httpResponse, typeOfT);
+		return processListResult(httpResponse, typeOfT);
 	}
 
 	@Override
 	public <T> Map<String, Object> zinsert(String eid, Map<String, Object> urlParameters, T item) throws Exception
 	{
+		List<T> payload = new ArrayList<>();
+		payload.add(item);
+
+		List<Map<String, Object>> result = zinsert(eid, urlParameters, payload);
+		if(result != null && !result.isEmpty())
+		{
+			return result.get(0);
+		}
+		return null;
+	}
+
+	@Override
+	public <T> List<Map<String, Object>> zinsert(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception
+	{
 		Map<String, String> headers = new HashMap<>();
 		if (isKeyRequired)
 		{
@@ -87,7 +186,7 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 				.queryString(urlParameters)
 				.body(objectMapper.writeValueAsString(item))
 				.asStringAsync();
-		return processObjectResult(httpResponse);
+		return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>() {}.getType());
 	}
 
 	@Override
@@ -167,7 +266,7 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 	}
 
 	@Override
-	public <T> T zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
+	public <T> List<T> zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
 	{
 		Map<String, String> headers = new HashMap<>();
 		if (isKeyRequired)
@@ -183,7 +282,7 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processObjectResult(httpResponse, typeOfT);
+			return processListResult(httpResponse, typeOfT);
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
 		{
@@ -201,7 +300,7 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 	}
 
 	@Override
-	public Map<String, Object> zdelete(String eid, Map<String, Object> urlParameters) throws Exception
+	public List<Map<String, Object>> zdelete(String eid, Map<String, Object> urlParameters) throws Exception
 	{
 		Map<String, String> headers = new HashMap<>();
 		if (isKeyRequired)
@@ -217,7 +316,9 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processObjectResult(httpResponse);
+			return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>()
+			{
+			}.getType());
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
 		{
@@ -226,13 +327,17 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processObjectResult(httpResponse);
+			return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>(){}.getType());
 		}
 		else
 		{
 			throw new Exception("Invalid HTTP METHOD Mapping");
 		}
 	}
+
+	//endregion
+
+	//region RETRIEVAL
 
 	@Override
 	public <T> T zgetSingle(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
@@ -253,6 +358,12 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 	}
 
 	@Override
+	public <T> T zgetSingle(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception
+	{
+		return null;
+	}
+
+	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
 	{
 		Map<String, String> headers = new HashMap<>();
@@ -262,12 +373,28 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+		return processListResult(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
-				.asStringAsync();
-		return processListResult(httpResponse, typeOfT);
+				.asStringAsync(), typeOfT);
+	}
+
+	@Override
+	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			headers.put("Authorization", this.apiKey);
+		}
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		return processListResult(Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync(), objectAssembler);
 	}
 
 	@Override
@@ -280,19 +407,21 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-
 		if (pagingInformation == null)
 		{
-			return processListResult(httpResponse, typeOfT);
+			return processListResult(Unirest.get(getBaseUrl() + "zget")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.asStringAsync(), typeOfT);
 		}
 		else
 		{
-			return processListResult(httpResponse, pagingInformation, typeOfT);
+			return processListResult(Unirest.get(getBaseUrl() + "zget")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.asStringAsync(), pagingInformation, typeOfT);
 		}
 	}
 
@@ -314,8 +443,7 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 		{
 			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
 		}
-		Future<HttpResponse<String>> httpResponse = request.asStringAsync();
-		return processListResult(httpResponse, typeOfT);
+		return processListResult(request.asStringAsync(), typeOfT);
 	}
 
 	@Override
@@ -336,15 +464,27 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 		{
 			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
 		}
-		Future<HttpResponse<String>> httpResponse = request.asStringAsync();
+
 		if (pagingInformation == null)
 		{
-			return processListResult(httpResponse, typeOfT);
+			return processListResult(request.asStringAsync(), typeOfT);
 		}
 		else
 		{
-			return processListResult(httpResponse, pagingInformation, typeOfT);
+			return processListResult(request.asStringAsync(), pagingInformation, typeOfT);
 		}
+	}
+
+	@Override
+	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception
+	{
+		throw new Exception("Not implement method");
+	}
+
+	@Override
+	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, IObjectAssembler objectAssembler) throws Exception
+	{
+		throw new Exception("Not implement method");
 	}
 
 	@Override
@@ -356,13 +496,11 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 			headers.put("Authorization", this.apiKey);
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+		return processJSONResult(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
-				.asStringAsync();
-		return processJSONResult(httpResponse);
+				.asStringAsync());
 	}
 
 	@Override
@@ -374,7 +512,6 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 			headers.put("Authorization", this.apiKey);
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
-
 		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
@@ -383,8 +520,7 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 		{
 			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
 		}
-		Future<HttpResponse<String>> httpResponse = request.asStringAsync();
-		return processJSONResult(httpResponse);
+		return processJSONResult(request.asStringAsync());
 	}
 
 	@Override
@@ -396,13 +532,11 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 			headers.put("Authorization", this.apiKey);
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
-				.asStringAsync();
-		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(httpResponse);
+				.asStringAsync());
 		return jsonPrimitive.getAsString();
 	}
 
@@ -415,13 +549,11 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 			headers.put("Authorization", this.apiKey);
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
-				.asStringAsync();
-		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(httpResponse);
+				.asStringAsync());
 		return jsonPrimitive.getAsInt();
 	}
 
@@ -434,13 +566,11 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 			headers.put("Authorization", this.apiKey);
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
-				.asStringAsync();
-		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(httpResponse);
+				.asStringAsync());
 		return jsonPrimitive.getAsLong();
 	}
 
@@ -453,15 +583,17 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 			headers.put("Authorization", this.apiKey);
 		}
 		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
-				.asStringAsync();
-		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(httpResponse);
+				.asStringAsync());
 		return jsonPrimitive.getAsDouble();
 	}
+
+	//endregion
+
+	//region RESULT PROCESSOR
 
 	@Override
 	public <T> T processObjectResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
@@ -476,16 +608,9 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 			{
 				JsonObject resultObject = jsonElement.getAsJsonObject();
 				JsonElement dataMember = resultObject.getAsJsonObject("data");
-				if (dataMember != null)
+				if (dataMember != null && !dataMember.isJsonNull())
 				{
-					if (!dataMember.isJsonNull())
-					{
-						return gson.fromJson(dataMember, typeOfT);
-					}
-					else
-					{
-						return gson.fromJson(resultObject, typeOfT);
-					}
+					return gson.fromJson(dataMember, typeOfT);
 				}
 				else
 				{
@@ -495,6 +620,36 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 			return null;
 		}
 		throw new Exception("Error processing your request");
+	}
+
+	private JsonElement getJsonElement(HttpResponse<String> result) throws Exception
+	{
+		if (result.getStatus() >= 200 && result.getStatus() <= 299)
+		{
+			Gson gson = getGsonWithSerializerDeserializer();
+			return gson.fromJson(result.getBody(), JsonElement.class);
+		}
+		throw new Exception("Invalid HTTP Response Code");
+	}
+
+	private JsonObject getJsonObject(JsonElement jsonElement) throws Exception
+	{
+		if (jsonElement == null)
+		{
+			throw new Exception("Result JsonElement is null");
+		}
+
+		if (!jsonElement.isJsonObject())
+		{
+			throw new Exception("Result is not JsonObject");
+		}
+		return jsonElement.getAsJsonObject();
+	}
+
+	@Override
+	public <T> T processObjectResult(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception
+	{
+		throw new Exception("Not implemented method");
 	}
 
 	@Override
@@ -512,20 +667,11 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 				{
 					JsonObject resultObject = jsonElement.getAsJsonObject();
 					JsonElement dataMember = resultObject.getAsJsonObject("data");
-					if (dataMember != null)
+					if (dataMember != null && !dataMember.isJsonNull())
 					{
-						if (!dataMember.isJsonNull())
+						return gson.fromJson(dataMember, new TypeToken<Map<String, Object>>()
 						{
-							return gson.fromJson(dataMember, new TypeToken<Map<String, Object>>()
-							{
-							}.getType());
-						}
-						else
-						{
-							return gson.fromJson(resultObject, new TypeToken<Map<String, Object>>()
-							{
-							}.getType());
-						}
+						}.getType());
 					}
 					else
 					{
@@ -588,7 +734,7 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 				if (!dataMember.isJsonNull())
 				{
 					List<T> tmpList = new ArrayList<>();
-					while(dataMember.iterator().hasNext())
+					while (dataMember.iterator().hasNext())
 					{
 						tmpList.add(objectAssembler.assemble(dataMember.iterator().next()));
 					}
@@ -617,12 +763,9 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 				JsonObject resultObject = jsonElement.getAsJsonObject();
 				JsonArray dataMember = resultObject.getAsJsonArray("data");
 				pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
-				if (!dataMember.isJsonNull())
+				if (!dataMember.isJsonNull() && dataMember.isJsonArray())
 				{
-					if (dataMember.isJsonArray())
-					{
-						return gson.fromJson(dataMember, typeOfT);
-					}
+					return gson.fromJson(dataMember, typeOfT);
 				}
 				return new ArrayList<>();
 			}
@@ -637,7 +780,33 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 	@Override
 	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception
 	{
-		return null;
+		try
+		{
+			HttpResponse<String> result = httpResponse.get();
+			if (result.getStatus() >= 200 && result.getStatus() <= 299)
+			{
+				Gson gson = getGsonWithSerializerDeserializer();
+				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
+				JsonObject resultObject = jsonElement.getAsJsonObject();
+				JsonArray dataMember = resultObject.getAsJsonArray("data");
+				pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
+				if (!dataMember.isJsonNull() && dataMember.isJsonArray())
+				{
+					List<T> tmpList = new ArrayList<>();
+					while (dataMember.iterator().hasNext())
+					{
+						tmpList.add(objectAssembler.assemble(dataMember.iterator().next()));
+					}
+					return tmpList;
+				}
+				return new ArrayList<>();
+			}
+		}
+		catch (Exception exception)
+		{
+			throw exception;
+		}
+		throw new Exception("Error processing your request");
 	}
 
 	@Override
@@ -693,6 +862,8 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 		}
 		throw new Exception("Error processing your request");
 	}
+
+	//endregion
 
 	private Gson getGsonWithSerializerDeserializer()
 	{
@@ -771,5 +942,13 @@ public class RestfulClient implements IRestfulClient, IResultProcessor
 	public void setApiKey(String apiKey)
 	{
 		this.apiKey = apiKey;
+	}
+
+	public static <T> T get(List<T> result, int pos) {
+		if(result != null && !result.isEmpty())
+		{
+			return result.get(pos);
+		}
+		return null;
 	}
 }
