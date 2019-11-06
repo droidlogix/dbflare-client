@@ -127,8 +127,8 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 		List<T> payload = new ArrayList<>();
 		payload.add(item);
 
-		List<T> result = zinsert(eid, urlParameters, payload, typeOfT);
-		if(result != null && !result.isEmpty())
+		List<T> result = zinsert(eid, urlParameters, payload, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
+		if (result != null && !result.isEmpty())
 		{
 			return result.get(0);
 		}
@@ -162,7 +162,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 		payload.add(item);
 
 		List<Map<String, Object>> result = zinsert(eid, urlParameters, payload);
-		if(result != null && !result.isEmpty())
+		if (result != null && !result.isEmpty())
 		{
 			return result.get(0);
 		}
@@ -186,7 +186,9 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 				.queryString(urlParameters)
 				.body(objectMapper.writeValueAsString(item))
 				.asStringAsync();
-		return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>() {}.getType());
+		return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>()
+		{
+		}.getType());
 	}
 
 	@Override
@@ -282,7 +284,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processListResult(httpResponse, typeOfT);
+			return processListResult(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
 		{
@@ -291,7 +293,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processObjectResult(httpResponse, typeOfT);
+			return processListResult(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 		else
 		{
@@ -327,7 +329,9 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>(){}.getType());
+			return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>()
+			{
+			}.getType());
 		}
 		else
 		{
@@ -700,13 +704,27 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 			{
 				Gson gson = getGsonWithSerializerDeserializer();
 				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				JsonObject resultObject = jsonElement.getAsJsonObject();
-				JsonArray dataMember = resultObject.getAsJsonArray("data");
-				if (!dataMember.isJsonNull())
+				if (jsonElement != null && !jsonElement.isJsonNull())
 				{
-					if (dataMember.isJsonArray())
+					if (jsonElement.isJsonObject())
 					{
-						return gson.fromJson(dataMember, typeOfT);
+						JsonObject resultObject = jsonElement.getAsJsonObject();
+						JsonArray dataMember = resultObject.getAsJsonArray("data");
+						if (!dataMember.isJsonNull())
+						{
+							if (dataMember.isJsonArray())
+							{
+								return gson.fromJson(dataMember, typeOfT);
+							}
+						}
+					}
+					else if (jsonElement.isJsonArray())
+					{
+						return gson.fromJson(jsonElement.getAsJsonArray(), typeOfT);
+					}
+					else
+					{
+						throw new Exception("Invalid result format");
 					}
 				}
 				return new ArrayList<>();
@@ -729,16 +747,36 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 			{
 				Gson gson = getGsonWithSerializerDeserializer();
 				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				JsonObject resultObject = jsonElement.getAsJsonObject();
-				JsonArray dataMember = resultObject.getAsJsonArray("data");
-				if (!dataMember.isJsonNull())
+				if (jsonElement != null && !jsonElement.isJsonNull())
 				{
-					List<T> tmpList = new ArrayList<>();
-					while (dataMember.iterator().hasNext())
+					if (jsonElement.isJsonObject())
 					{
-						tmpList.add(objectAssembler.assemble(dataMember.iterator().next()));
+						JsonObject resultObject = jsonElement.getAsJsonObject();
+						JsonArray dataMember = resultObject.getAsJsonArray("data");
+						if (!dataMember.isJsonNull())
+						{
+							List<T> tmpList = new ArrayList<>();
+							while (dataMember.iterator().hasNext())
+							{
+								tmpList.add(objectAssembler.assemble(dataMember.iterator().next()));
+							}
+							return tmpList;
+						}
 					}
-					return tmpList;
+					else if (jsonElement.isJsonArray())
+					{
+						List<T> tmpList = new ArrayList<>();
+						JsonArray jsonArray = jsonElement.getAsJsonArray();
+						while (jsonArray.iterator().hasNext())
+						{
+							tmpList.add(objectAssembler.assemble(jsonArray.iterator().next()));
+						}
+						return tmpList;
+					}
+					else
+					{
+						throw new Exception("Invalid result format");
+					}
 				}
 				return new ArrayList<>();
 			}
@@ -760,13 +798,28 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 			{
 				Gson gson = getGsonWithSerializerDeserializer();
 				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				JsonObject resultObject = jsonElement.getAsJsonObject();
-				JsonArray dataMember = resultObject.getAsJsonArray("data");
-				pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
-				if (!dataMember.isJsonNull() && dataMember.isJsonArray())
+				if (jsonElement != null && !jsonElement.isJsonNull())
 				{
-					return gson.fromJson(dataMember, typeOfT);
+					if (jsonElement.isJsonObject())
+					{
+						JsonObject resultObject = jsonElement.getAsJsonObject();
+						JsonArray dataMember = resultObject.getAsJsonArray("data");
+						pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
+						if (!dataMember.isJsonNull() && dataMember.isJsonArray())
+						{
+							return gson.fromJson(dataMember, typeOfT);
+						}
+					}
+					else if (jsonElement.isJsonArray())
+					{
+						return gson.fromJson(jsonElement.getAsJsonArray(), typeOfT);
+					}
+					else
+					{
+						throw new Exception("Invalid result format");
+					}
 				}
+
 				return new ArrayList<>();
 			}
 		}
@@ -787,17 +840,37 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 			{
 				Gson gson = getGsonWithSerializerDeserializer();
 				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				JsonObject resultObject = jsonElement.getAsJsonObject();
-				JsonArray dataMember = resultObject.getAsJsonArray("data");
-				pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
-				if (!dataMember.isJsonNull() && dataMember.isJsonArray())
+				if (jsonElement != null && !jsonElement.isJsonNull())
 				{
-					List<T> tmpList = new ArrayList<>();
-					while (dataMember.iterator().hasNext())
+					if (jsonElement.isJsonObject())
 					{
-						tmpList.add(objectAssembler.assemble(dataMember.iterator().next()));
+						JsonObject resultObject = jsonElement.getAsJsonObject();
+						JsonArray dataMember = resultObject.getAsJsonArray("data");
+						pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
+						if (!dataMember.isJsonNull() && dataMember.isJsonArray())
+						{
+							List<T> tmpList = new ArrayList<>();
+							while (dataMember.iterator().hasNext())
+							{
+								tmpList.add(objectAssembler.assemble(dataMember.iterator().next()));
+							}
+							return tmpList;
+						}
 					}
-					return tmpList;
+					else if (jsonElement.isJsonArray())
+					{
+						List<T> tmpList = new ArrayList<>();
+						JsonArray jsonArray = jsonElement.getAsJsonArray();
+						while (jsonArray.iterator().hasNext())
+						{
+							tmpList.add(objectAssembler.assemble(jsonArray.iterator().next()));
+						}
+						return tmpList;
+					}
+					else
+					{
+						throw new Exception("Invalid result format");
+					}
 				}
 				return new ArrayList<>();
 			}
@@ -944,8 +1017,9 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 		this.apiKey = apiKey;
 	}
 
-	public static <T> T get(List<T> result, int pos) {
-		if(result != null && !result.isEmpty())
+	public static <T> T get(List<T> result, int pos)
+	{
+		if (result != null && !result.isEmpty())
 		{
 			return result.get(pos);
 		}
