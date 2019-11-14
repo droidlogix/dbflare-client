@@ -502,13 +502,39 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception
 	{
-		throw new Exception("Not implement method");
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters);
+
+		if (pagingInformation == null)
+		{
+			return parseToList(request.asStringAsync(), objectAssembler);
+		}
+		else
+		{
+			return parseToList(request.asStringAsync(), pagingInformation, objectAssembler);
+		}
 	}
 
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, IObjectAssembler objectAssembler) throws Exception
 	{
-		throw new Exception("Not implement method");
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters);
+		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
+		{
+			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
+		}
+		return parseToList(request.asStringAsync(), objectAssembler);
 	}
 
 	//endregion
