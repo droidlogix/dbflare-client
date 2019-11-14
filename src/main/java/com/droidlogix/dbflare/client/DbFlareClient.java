@@ -19,7 +19,7 @@ import java.util.concurrent.Future;
  * @author John Pili
  * @since 2016-11-15
  */
-public class DbFlareClient implements IRestfulClient, IResultProcessor
+public class DbFlareClient implements IDbFlareClient, IResultProcessor
 {
 	private ObjectMapper objectMapper;
 	private String baseUrl;
@@ -120,7 +120,6 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 
 	//region TRANSACTION
 
-
 	@Override
 	public <T> T zinsert(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
 	{
@@ -133,26 +132,6 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 			return result.get(0);
 		}
 		return null;
-	}
-
-	@Override
-	public <T> List<T> zinsert(String eid, Map<String, Object> urlParameters, List<T> item, Type typeOfT) throws Exception
-	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-		Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zinsert")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.body(objectMapper.writeValueAsString(item))
-				.asStringAsync();
-		return processListResult(httpResponse, typeOfT);
 	}
 
 	@Override
@@ -170,23 +149,33 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	}
 
 	@Override
-	public <T> List<Map<String, Object>> zinsert(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception
+	public <T> List<T> zinsert(String eid, Map<String, Object> urlParameters, List<T> item, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 		Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zinsert")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
 				.body(objectMapper.writeValueAsString(item))
 				.asStringAsync();
-		return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>()
+		return parseToList(httpResponse, typeOfT);
+	}
+
+	@Override
+	public <T> List<Map<String, Object>> zinsert(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception
+	{
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zinsert")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.body(objectMapper.writeValueAsString(item))
+				.asStringAsync();
+		return parseToList(httpResponse, new TypeToken<List<Map<String, Object>>>()
 		{
 		}.getType());
 	}
@@ -194,34 +183,28 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public <T> T zupdate(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
 		{
-			//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
 					.headers(headers)
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.body(objectMapper.writeValueAsString(item))
 					.asStringAsync();
-			return processObjectResult(httpResponse, typeOfT);
+			return parse(httpResponse, typeOfT);
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
 		{
-			//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
 					.headers(headers)
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.body(objectMapper.writeValueAsString(item))
 					.asStringAsync();
-			return processObjectResult(httpResponse, typeOfT);
+			return parse(httpResponse, typeOfT);
 		}
 		else
 		{
@@ -232,34 +215,28 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public <T> Map<String, Object> zupdate(String eid, Map<String, Object> urlParameters, T item) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
 		{
-			//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
 					.headers(headers)
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.body(objectMapper.writeValueAsString(item))
 					.asStringAsync();
-			return processObjectResult(httpResponse);
+			return parseToMap(httpResponse);
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
 		{
-			//ObjectMapper objectMapper = new ObjectMapper().configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
 					.headers(headers)
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.body(objectMapper.writeValueAsString(item))
 					.asStringAsync();
-			return processObjectResult(httpResponse);
+			return parseToMap(httpResponse);
 		}
 		else
 		{
@@ -270,11 +247,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public <T> List<T> zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("delete"))
@@ -284,7 +257,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processListResult(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
+			return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
 		{
@@ -293,7 +266,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processListResult(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
+			return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 		else
 		{
@@ -304,11 +277,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public List<Map<String, Object>> zdelete(String eid, Map<String, Object> urlParameters) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("delete"))
@@ -318,7 +287,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>()
+			return parseToList(httpResponse, new TypeToken<List<Map<String, Object>>>()
 			{
 			}.getType());
 		}
@@ -329,7 +298,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return processListResult(httpResponse, new TypeToken<List<Map<String, Object>>>()
+			return parseToList(httpResponse, new TypeToken<List<Map<String, Object>>>()
 			{
 			}.getType());
 		}
@@ -346,11 +315,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public <T> T zgetSingle(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
@@ -358,7 +323,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 				.queryString("eid", eid)
 				.queryString(urlParameters)
 				.asStringAsync();
-		return processObjectResult(httpResponse, typeOfT);
+		return parse(httpResponse, typeOfT);
 	}
 
 	@Override
@@ -370,14 +335,10 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		return processListResult(Unirest.get(getBaseUrl() + "zget")
+		return parseToList(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
@@ -387,14 +348,10 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		return processListResult(Unirest.get(getBaseUrl() + "zget")
+		return parseToList(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
@@ -404,16 +361,12 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		if (pagingInformation == null)
 		{
-			return processListResult(Unirest.get(getBaseUrl() + "zget")
+			return parseToList(Unirest.get(getBaseUrl() + "zget")
 					.headers(headers)
 					.queryString("eid", eid)
 					.queryString(urlParameters)
@@ -421,7 +374,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 		}
 		else
 		{
-			return processListResult(Unirest.get(getBaseUrl() + "zget")
+			return parseToList(Unirest.get(getBaseUrl() + "zget")
 					.headers(headers)
 					.queryString("eid", eid)
 					.queryString(urlParameters)
@@ -432,11 +385,7 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
@@ -447,17 +396,13 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 		{
 			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
 		}
-		return processListResult(request.asStringAsync(), typeOfT);
+		return parseToList(request.asStringAsync(), typeOfT);
 	}
 
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
@@ -471,11 +416,11 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 
 		if (pagingInformation == null)
 		{
-			return processListResult(request.asStringAsync(), typeOfT);
+			return parseToList(request.asStringAsync(), typeOfT);
 		}
 		else
 		{
-			return processListResult(request.asStringAsync(), pagingInformation, typeOfT);
+			return parseToList(request.asStringAsync(), pagingInformation, typeOfT);
 		}
 	}
 
@@ -494,13 +439,10 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public String zgetJSON(String eid, Map<String, Object> urlParameters) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
-		return processJSONResult(Unirest.get(getBaseUrl() + "zget")
+
+		return parseToJSONString(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
@@ -510,12 +452,9 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public String zgetJSON(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
+
 		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
@@ -524,19 +463,16 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 		{
 			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
 		}
-		return processJSONResult(request.asStringAsync());
+		return parseToJSONString(request.asStringAsync());
 	}
 
 	@Override
 	public String zgetString(String eid, Map<String, Object> urlParameters) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
-		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(Unirest.get(getBaseUrl() + "zget")
+
+		JsonPrimitive jsonPrimitive = parseToJsonPrimitive(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
@@ -547,13 +483,10 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public long zgetInteger(String eid, Map<String, Object> urlParameters) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
-		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(Unirest.get(getBaseUrl() + "zget")
+
+		JsonPrimitive jsonPrimitive = parseToJsonPrimitive(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
@@ -564,13 +497,10 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public long zgetLong(String eid, Map<String, Object> urlParameters) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
-		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(Unirest.get(getBaseUrl() + "zget")
+
+		JsonPrimitive jsonPrimitive = parseToJsonPrimitive(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
@@ -581,13 +511,10 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 	@Override
 	public double zgetDouble(String eid, Map<String, Object> urlParameters) throws Exception
 	{
-		Map<String, String> headers = new HashMap<>();
-		if (isKeyRequired)
-		{
-			headers.put("Authorization", this.apiKey);
-		}
+		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
-		JsonPrimitive jsonPrimitive = processJsonPrimitiveResult(Unirest.get(getBaseUrl() + "zget")
+
+		JsonPrimitive jsonPrimitive = parseToJsonPrimitive(Unirest.get(getBaseUrl() + "zget")
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
@@ -599,342 +526,421 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 
 	//region RESULT PROCESSOR
 
+	//region PARSE OBJECT
+
 	@Override
-	public <T> T processObjectResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
+	public <T> T parse(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
 	{
-		HttpResponse<String> result = httpResponse.get();
-		if (result.getStatus() >= 200 && result.getStatus() <= 299)
+		Gson gson = getGsonWithSerializerDeserializer();
+
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
 		{
-			Gson gson = getGsonWithSerializerDeserializer();
-			String jsonString = result.getBody();
-			JsonElement jsonElement = gson.fromJson(jsonString, JsonElement.class);
-			if (!jsonString.equalsIgnoreCase("null") && !jsonString.contains("\"data\":null") && jsonElement != null)
-			{
-				JsonObject resultObject = jsonElement.getAsJsonObject();
-				JsonElement dataMember = resultObject.getAsJsonObject("data");
-				if (dataMember != null && !dataMember.isJsonNull())
-				{
-					return gson.fromJson(dataMember, typeOfT);
-				}
-				else
-				{
-					return gson.fromJson(resultObject, typeOfT);
-				}
-			}
 			return null;
 		}
-		throw new Exception("Error processing your request");
-	}
 
-	private JsonElement getJsonElement(HttpResponse<String> result) throws Exception
-	{
-		if (result.getStatus() >= 200 && result.getStatus() <= 299)
+		if (rootJsonElement.isJsonPrimitive())
 		{
-			Gson gson = getGsonWithSerializerDeserializer();
-			return gson.fromJson(result.getBody(), JsonElement.class);
-		}
-		throw new Exception("Invalid HTTP Response Code");
-	}
-
-	private JsonObject getJsonObject(JsonElement jsonElement) throws Exception
-	{
-		if (jsonElement == null)
-		{
-			throw new Exception("Result JsonElement is null");
+			throw new Exception("Cannot convert JSON Primitive to Object of T");
 		}
 
-		if (!jsonElement.isJsonObject())
+		if (rootJsonElement.isJsonArray())
 		{
-			throw new Exception("Result is not JsonObject");
+			throw new Exception("Cannot convert JSON Array to Object of T");
 		}
-		return jsonElement.getAsJsonObject();
-	}
 
-	@Override
-	public <T> T processObjectResult(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception
-	{
-		throw new Exception("Not implemented method");
-	}
-
-	@Override
-	public Map<String, Object> processObjectResult(Future<HttpResponse<String>> httpResponse) throws Exception
-	{
-		try
+		if (rootJsonElement.isJsonObject())
 		{
-			HttpResponse<String> result = httpResponse.get();
-			if (result.getStatus() >= 200 && result.getStatus() <= 299)
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
 			{
-				Gson gson = getGsonWithSerializerDeserializer();
-				String jsonString = result.getBody();
-				JsonElement jsonElement = gson.fromJson(jsonString, JsonElement.class);
-				if (!jsonString.equalsIgnoreCase("null") && !jsonString.contains("\"data\":null") && jsonElement != null)
-				{
-					JsonObject resultObject = jsonElement.getAsJsonObject();
-					JsonElement dataMember = resultObject.getAsJsonObject("data");
-					if (dataMember != null && !dataMember.isJsonNull())
-					{
-						return gson.fromJson(dataMember, new TypeToken<Map<String, Object>>()
-						{
-						}.getType());
-					}
-					else
-					{
-						return gson.fromJson(resultObject, new TypeToken<Map<String, Object>>()
-						{
-						}.getType());
-					}
-				}
 				return null;
 			}
-		}
-		catch (Exception exception)
-		{
-			throw exception;
-		}
-		throw new Exception("Error processing your request");
-	}
 
-	@Override
-	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
-	{
-		try
-		{
-			HttpResponse<String> result = httpResponse.get();
-			if (result.getStatus() >= 200 && result.getStatus() <= 299)
+			if (root.has("data"))
 			{
-				Gson gson = getGsonWithSerializerDeserializer();
-				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				if (jsonElement != null && !jsonElement.isJsonNull())
-				{
-					if (jsonElement.isJsonObject())
-					{
-						JsonObject resultObject = jsonElement.getAsJsonObject();
-						JsonArray dataMember = resultObject.getAsJsonArray("data");
-						if (!dataMember.isJsonNull())
-						{
-							if (dataMember.isJsonArray())
-							{
-								return gson.fromJson(dataMember, typeOfT);
-							}
-						}
-					}
-					else if (jsonElement.isJsonArray())
-					{
-						return gson.fromJson(jsonElement.getAsJsonArray(), typeOfT);
-					}
-					else
-					{
-						throw new Exception("Invalid result format");
-					}
-				}
-				return new ArrayList<>();
-			}
-		}
-		catch (Exception exception)
-		{
-			throw new Exception(exception.getMessage(), exception.getCause());
-		}
-		throw new Exception("Error processing your request");
-	}
-
-	@Override
-	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception
-	{
-		try
-		{
-			HttpResponse<String> result = httpResponse.get();
-			if (result.getStatus() >= 200 && result.getStatus() <= 299)
-			{
-				Gson gson = getGsonWithSerializerDeserializer();
-				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				if (jsonElement != null && !jsonElement.isJsonNull())
-				{
-					if (jsonElement.isJsonObject())
-					{
-						JsonObject resultObject = jsonElement.getAsJsonObject();
-						JsonArray dataMember = resultObject.getAsJsonArray("data");
-						if (!dataMember.isJsonNull())
-						{
-							List<T> tmpList = new ArrayList<>();
-							while (dataMember.iterator().hasNext())
-							{
-								tmpList.add(objectAssembler.assemble(dataMember.iterator().next()));
-							}
-							return tmpList;
-						}
-					}
-					else if (jsonElement.isJsonArray())
-					{
-						List<T> tmpList = new ArrayList<>();
-						JsonArray jsonArray = jsonElement.getAsJsonArray();
-						while (jsonArray.iterator().hasNext())
-						{
-							tmpList.add(objectAssembler.assemble(jsonArray.iterator().next()));
-						}
-						return tmpList;
-					}
-					else
-					{
-						throw new Exception("Invalid result format");
-					}
-				}
-				return new ArrayList<>();
-			}
-		}
-		catch (Exception exception)
-		{
-			throw new Exception(exception.getMessage(), exception.getCause());
-		}
-		throw new Exception("Error processing your request");
-	}
-
-	@Override
-	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception
-	{
-		try
-		{
-			HttpResponse<String> result = httpResponse.get();
-			if (result.getStatus() >= 200 && result.getStatus() <= 299)
-			{
-				Gson gson = getGsonWithSerializerDeserializer();
-				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				if (jsonElement != null && !jsonElement.isJsonNull())
-				{
-					if (jsonElement.isJsonObject())
-					{
-						JsonObject resultObject = jsonElement.getAsJsonObject();
-						JsonArray dataMember = resultObject.getAsJsonArray("data");
-						pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
-						if (!dataMember.isJsonNull() && dataMember.isJsonArray())
-						{
-							return gson.fromJson(dataMember, typeOfT);
-						}
-					}
-					else if (jsonElement.isJsonArray())
-					{
-						return gson.fromJson(jsonElement.getAsJsonArray(), typeOfT);
-					}
-					else
-					{
-						throw new Exception("Invalid result format");
-					}
-				}
-
-				return new ArrayList<>();
-			}
-		}
-		catch (Exception exception)
-		{
-			throw exception;
-		}
-		throw new Exception("Error processing your request");
-	}
-
-	@Override
-	public <T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception
-	{
-		try
-		{
-			HttpResponse<String> result = httpResponse.get();
-			if (result.getStatus() >= 200 && result.getStatus() <= 299)
-			{
-				Gson gson = getGsonWithSerializerDeserializer();
-				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				if (jsonElement != null && !jsonElement.isJsonNull())
-				{
-					if (jsonElement.isJsonObject())
-					{
-						JsonObject resultObject = jsonElement.getAsJsonObject();
-						JsonArray dataMember = resultObject.getAsJsonArray("data");
-						pagingInformation.setTotal(resultObject.getAsJsonPrimitive("total").getAsInt());
-						if (!dataMember.isJsonNull() && dataMember.isJsonArray())
-						{
-							List<T> tmpList = new ArrayList<>();
-							while (dataMember.iterator().hasNext())
-							{
-								tmpList.add(objectAssembler.assemble(dataMember.iterator().next()));
-							}
-							return tmpList;
-						}
-					}
-					else if (jsonElement.isJsonArray())
-					{
-						List<T> tmpList = new ArrayList<>();
-						JsonArray jsonArray = jsonElement.getAsJsonArray();
-						while (jsonArray.iterator().hasNext())
-						{
-							tmpList.add(objectAssembler.assemble(jsonArray.iterator().next()));
-						}
-						return tmpList;
-					}
-					else
-					{
-						throw new Exception("Invalid result format");
-					}
-				}
-				return new ArrayList<>();
-			}
-		}
-		catch (Exception exception)
-		{
-			throw exception;
-		}
-		throw new Exception("Error processing your request");
-	}
-
-	@Override
-	public String processJSONResult(Future<HttpResponse<String>> httpResponse) throws Exception
-	{
-		try
-		{
-			HttpResponse<String> result = httpResponse.get();
-			if (result.getStatus() >= 200 && result.getStatus() <= 299)
-			{
-				Gson gson = getGsonWithSerializerDeserializer();
-				JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-				if (jsonElement.isJsonArray())
-				{
-					JsonArray mainJsonObject = jsonElement.getAsJsonArray();
-					return mainJsonObject.toString();
-				}
-				else if (jsonElement.isJsonObject())
-				{
-					JsonObject mainJsonObject = jsonElement.getAsJsonObject();
-					return mainJsonObject.toString();
-				}
-				else if (jsonElement.isJsonPrimitive())
-				{
-					JsonPrimitive jsonPrimitive = jsonElement.getAsJsonPrimitive();
-					return jsonPrimitive.getAsString();
-				}
-			}
-		}
-		catch (Exception exception)
-		{
-			throw new Exception(exception.getMessage(), exception.getCause());
-		}
-		throw new Exception("Error processing your request ");
-	}
-
-	@Override
-	public JsonPrimitive processJsonPrimitiveResult(Future<HttpResponse<String>> httpResponse) throws Exception
-	{
-		HttpResponse<String> result = httpResponse.get();
-		if (result.getStatus() >= 200 && result.getStatus() <= 299)
-		{
-			Gson gson = getGsonWithSerializerDeserializer();
-			JsonElement jsonElement = gson.fromJson(result.getBody(), JsonElement.class);
-			if (jsonElement.isJsonPrimitive())
-			{
-				return jsonElement.getAsJsonPrimitive();
+				JsonObject data = root.getAsJsonObject("data");
+				return gson.fromJson(data, typeOfT);
 			}
 			else
 			{
-				throw new Exception("Result is not primitive");
+				return gson.fromJson(root, typeOfT);
 			}
 		}
-		throw new Exception("Error processing your request");
+		return null;
 	}
+
+	@Override
+	public <T> T parse(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception
+	{
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			return null;
+		}
+
+		if (rootJsonElement.isJsonPrimitive())
+		{
+			throw new Exception("Cannot convert JSON Primitive to Object of T");
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			throw new Exception("Cannot convert JSON Array to Object of T");
+		}
+
+		if (rootJsonElement.isJsonObject())
+		{
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
+			{
+				return null;
+			}
+
+			if (root.has("data"))
+			{
+				JsonObject data = root.getAsJsonObject("data");
+				return objectAssembler.assemble(data);
+			}
+			else
+			{
+				return objectAssembler.assemble(root);
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public Map<String, Object> parseToMap(Future<HttpResponse<String>> httpResponse) throws Exception
+	{
+		Gson gson = getGsonWithSerializerDeserializer();
+
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			return null;
+		}
+
+		if (rootJsonElement.isJsonPrimitive())
+		{
+			throw new Exception("Cannot convert JSON Primitive to Map<String, Object>");
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			throw new Exception("Cannot convert JSON Array to Map<String, Object>");
+		}
+
+		if (rootJsonElement.isJsonObject())
+		{
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
+			{
+				return null;
+			}
+
+			if (root.has("data"))
+			{
+				JsonObject data = root.getAsJsonObject("data");
+				return gson.fromJson(data, new TypeToken<Map<String, Object>>()
+				{
+				}.getType());
+			}
+			else
+			{
+				return gson.fromJson(root, new TypeToken<Map<String, Object>>()
+				{
+				}.getType());
+			}
+		}
+		return null;
+	}
+
+	//endregion
+
+	//region PARSE TO LIST
+
+	@Override
+	public <T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
+	{
+		Gson gson = getGsonWithSerializerDeserializer();
+
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			return new ArrayList<>();
+		}
+
+		if (rootJsonElement.isJsonPrimitive())
+		{
+			throw new Exception("Cannot convert JSON Primitive to List<T>");
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			JsonArray root = rootJsonElement.getAsJsonArray();
+			return gson.fromJson(root, typeOfT);
+		}
+		else if (rootJsonElement.isJsonObject())
+		{
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
+			{
+				return new ArrayList<>();
+			}
+
+			if (root.has("data") && root.get("data").isJsonArray())
+			{
+				JsonArray data = root.getAsJsonArray("data");
+				return gson.fromJson(data, typeOfT);
+			}
+		}
+		return new ArrayList<>();
+	}
+
+	@Override
+	public <T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception
+	{
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			return new ArrayList<>();
+		}
+
+		if (rootJsonElement.isJsonPrimitive())
+		{
+			throw new Exception("Cannot convert JSON Primitive to List<T>");
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			JsonArray data = rootJsonElement.getAsJsonArray();
+			List<T> tmpList = new ArrayList<>();
+			while (data.iterator().hasNext())
+			{
+				tmpList.add(objectAssembler.assemble(data.iterator().next()));
+			}
+			return tmpList;
+		}
+		else if (rootJsonElement.isJsonObject())
+		{
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
+			{
+				return new ArrayList<>();
+			}
+
+			if (root.has("data"))
+			{
+				JsonArray data = root.getAsJsonArray("data");
+				List<T> tmpList = new ArrayList<>();
+				while (data.iterator().hasNext())
+				{
+					tmpList.add(objectAssembler.assemble(data.iterator().next()));
+				}
+				return tmpList;
+			}
+		}
+		return new ArrayList<>();
+	}
+
+	@Override
+	public <T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception
+	{
+		Gson gson = getGsonWithSerializerDeserializer();
+
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			pagingInformation.setTotal(0);
+			return new ArrayList<>();
+		}
+
+		if (rootJsonElement.isJsonPrimitive())
+		{
+			throw new Exception("Cannot convert JSON Primitive to List<T>");
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			JsonArray root = rootJsonElement.getAsJsonArray();
+			if(root != null && !root.isJsonNull())
+			{
+				pagingInformation.setTotal(root.size());
+				return gson.fromJson(root, typeOfT);
+			}
+		}
+		else if (rootJsonElement.isJsonObject())
+		{
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
+			{
+				pagingInformation.setTotal(0);
+				return new ArrayList<>();
+			}
+
+			if (root.has("data") && root.get("data").isJsonArray())
+			{
+				JsonArray data = root.getAsJsonArray("data");
+				pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
+				return gson.fromJson(data, typeOfT);
+			}
+		}
+		return new ArrayList<>();
+	}
+
+	@Override
+	public <T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception
+	{
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			pagingInformation.setTotal(0);
+			return new ArrayList<>();
+		}
+
+		if (rootJsonElement.isJsonPrimitive())
+		{
+			throw new Exception("Cannot convert JSON Primitive to List<T>");
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			JsonArray data = rootJsonElement.getAsJsonArray();
+			List<T> tmpList = new ArrayList<>();
+			while (data.iterator().hasNext())
+			{
+				tmpList.add(objectAssembler.assemble(data.iterator().next()));
+			}
+			pagingInformation.setTotal(tmpList.size());
+			return tmpList;
+		}
+		else if (rootJsonElement.isJsonObject())
+		{
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
+			{
+				pagingInformation.setTotal(0);
+				return new ArrayList<>();
+			}
+
+			if (root.has("data"))
+			{
+				JsonArray data = root.getAsJsonArray("data");
+				pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
+				List<T> tmpList = new ArrayList<>();
+				while (data.iterator().hasNext())
+				{
+					tmpList.add(objectAssembler.assemble(data.iterator().next()));
+				}
+				return tmpList;
+			}
+		}
+		pagingInformation.setTotal(0);
+		return new ArrayList<>();
+	}
+
+	@Override
+	public List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse) throws Exception
+	{
+		Gson gson = getGsonWithSerializerDeserializer();
+
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			return new ArrayList<>();
+		}
+
+		if (rootJsonElement.isJsonPrimitive())
+		{
+			throw new Exception("Cannot convert JSON Primitive to List<Map<String, Object>>");
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			JsonArray data = rootJsonElement.getAsJsonArray();
+			return gson.fromJson(data, new TypeToken<Map<String, Object>>(){}.getType());
+		}
+		else if (rootJsonElement.isJsonObject())
+		{
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
+			{
+				return new ArrayList<>();
+			}
+
+			if (root.has("data") && root.get("data").isJsonArray())
+			{
+				JsonArray data = root.getAsJsonArray("data");
+				return gson.fromJson(data, new TypeToken<Map<String, Object>>(){}.getType());
+			}
+		}
+		return new ArrayList<>();
+	}
+
+	//endregion
+
+	//region JSON AND PRIMITIVE
+
+	@Override
+	public String parseToJSONString(Future<HttpResponse<String>> httpResponse) throws Exception
+	{
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			return null;
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			return rootJsonElement.getAsJsonArray().toString();
+		}
+		else if (rootJsonElement.isJsonObject())
+		{
+			return rootJsonElement.getAsJsonObject().toString();
+		}
+		else if (rootJsonElement.isJsonPrimitive())
+		{
+			return rootJsonElement.getAsJsonPrimitive().toString();
+		}
+		return null;
+	}
+
+	@Override
+	public JsonPrimitive parseToJsonPrimitive(Future<HttpResponse<String>> httpResponse) throws Exception
+	{
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			return null;
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			throw new Exception("Cannot convert JSON Array to JsonPrimitive");
+		}
+
+		if(rootJsonElement.isJsonPrimitive())
+		{
+			return rootJsonElement.getAsJsonPrimitive();
+		}
+		else if (rootJsonElement.isJsonObject())
+		{
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
+			{
+				return null;
+			}
+
+			if (root.has("data"))
+			{
+				return root.getAsJsonObject("data").getAsJsonPrimitive();
+			}
+		}
+		return null;
+	}
+
+	//endregion
 
 	//endregion
 
@@ -966,6 +972,24 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 			}
 		}).registerTypeHierarchyAdapter(byte[].class, new ByteArrayToBase64TypeAdapter());
 		return gsonBuilder.create();
+	}
+
+	private JsonElement getRootElement(HttpResponse<String> response) throws Exception
+	{
+		if (response == null)
+		{
+			throw new NullPointerException("response is null");
+		}
+
+		if (response.getStatus() >= 200 && response.getStatus() <= 299)
+		{
+			Gson gson = getGsonWithSerializerDeserializer();
+			return gson.fromJson(response.getBody(), JsonElement.class);
+		}
+		StringBuilder sb = new StringBuilder("Invalid HTTP Response Code\n");
+		sb.append(response.getStatusText());
+		sb.append(response.getBody());
+		throw new Exception(sb.toString());
 	}
 
 	//CODE FROM or BASED: https://gist.github.com/orip/3635246
@@ -1024,5 +1048,19 @@ public class DbFlareClient implements IRestfulClient, IResultProcessor
 			return result.get(pos);
 		}
 		return null;
+	}
+
+	public Map<String, String> apiKeyCheckpoint() throws Exception
+	{
+		Map<String, String> headers = new HashMap<>();
+		if (isKeyRequired)
+		{
+			if (this.apiKey == null || this.apiKey.trim().isEmpty())
+			{
+				throw new Exception("API Key is null or empty");
+			}
+			headers.put("Authorization", this.apiKey);
+		}
+		return headers;
 	}
 }

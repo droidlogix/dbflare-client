@@ -19,27 +19,23 @@ public interface IResultProcessor
 	 * @return
 	 * @throws Exception
 	 */
-	<T> T processObjectResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception;
+	<T> T parse(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception;
 
-	<T> T processObjectResult(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception;
+	<T> T parse(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception;
 
-	/**
-	 * Convert DbFlare result to Map
-	 * @param httpResponse
-	 * @return
-	 * @throws Exception
-	 */
-	Map<String, Object> processObjectResult(Future<HttpResponse<String>> httpResponse) throws Exception;
+	Map<String, Object> parseToMap(Future<HttpResponse<String>> httpResponse) throws Exception;
 
-	<T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception;
+	<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception;
 
-	<T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception;
+	<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception;
 
-	<T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception;
+	<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception;
 
-	<T> List<T> processListResult(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception;
+	<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception;
 
-	String processJSONResult(Future<HttpResponse<String>> httpResponse) throws Exception;
+	List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse) throws Exception;
 
-	JsonPrimitive processJsonPrimitiveResult(Future<HttpResponse<String>> httpResponse) throws Exception;
+	String parseToJSONString(Future<HttpResponse<String>> httpResponse) throws Exception;
+
+	JsonPrimitive parseToJsonPrimitive(Future<HttpResponse<String>> httpResponse) throws Exception;
 }
