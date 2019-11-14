@@ -128,7 +128,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		List<T> payload = new ArrayList<>();
 		payload.add(item);
 
-		List<T> result = zinsert(eid, urlParameters, payload, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
+		List<T> result = zinsert(eid, urlParameters, payload, typeOfT);
 		if (result != null && !result.isEmpty())
 		{
 			return result.get(0);
@@ -187,29 +187,95 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	@Override
 	public <T> T zupdate(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
 	{
-		List<T> payload = new ArrayList<>();
-		payload.add(item);
-
-		List<T> result = zupdate(eid, urlParameters, payload, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		if (result != null && !result.isEmpty())
+		if (urlParameters != null)
 		{
-			return result.get(0);
+			if (urlParameters.containsKey("_kb") && ((boolean) urlParameters.getOrDefault("_kb", false)))
+			{
+				List<T> payload = new ArrayList<>();
+				payload.add(item);
+
+				List<T> result = zupdate(eid, urlParameters, payload, typeOfT);
+				if (result != null && !result.isEmpty())
+				{
+					return result.get(0);
+				}
+			}
 		}
-		return null;
+
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return parse(httpResponse, typeOfT);
+		}
+		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return parse(httpResponse, typeOfT);
+		}
+		else
+		{
+			throw new Exception("Invalid HTTP METHOD Mapping");
+		}
 	}
 
 	@Override
 	public <T> Map<String, Object> zupdate(String eid, Map<String, Object> urlParameters, T item) throws Exception
 	{
-		List<T> payload = new ArrayList<>();
-		payload.add(item);
-
-		List<Map<String, Object>> result = zupdate(eid, urlParameters, payload);
-		if (result != null && !result.isEmpty())
+		if (urlParameters != null)
 		{
-			return result.get(0);
+			if (urlParameters.containsKey("_kb") && ((boolean) urlParameters.getOrDefault("_kb", false)))
+			{
+				List<T> payload = new ArrayList<>();
+				payload.add(item);
+
+				List<Map<String, Object>> result = zupdate(eid, urlParameters, payload);
+				if (result != null && !result.isEmpty())
+				{
+					return result.get(0);
+				}
+			}
 		}
-		return null;
+
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return parseToMap(httpResponse);
+		}
+		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return parseToMap(httpResponse);
+		}
+		else
+		{
+			throw new Exception("Invalid HTTP METHOD Mapping");
+		}
 	}
 
 	@Override
@@ -632,7 +698,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	//region PARSE OBJECT
 
 	@Override
-	public  <T> T parse(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
+	public <T> T parse(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
 	{
 		Gson gson = getGsonWithSerializerDeserializer();
 
@@ -654,6 +720,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 		if (rootJsonElement.isJsonObject())
 		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
 			JsonObject root = rootJsonElement.getAsJsonObject();
 			if (root == null || root.isJsonNull())
 			{
@@ -694,6 +761,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 		if (rootJsonElement.isJsonObject())
 		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
 			JsonObject root = rootJsonElement.getAsJsonObject();
 			if (root == null || root.isJsonNull())
 			{
@@ -736,6 +804,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 		if (rootJsonElement.isJsonObject())
 		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
 			JsonObject root = rootJsonElement.getAsJsonObject();
 			if (root == null || root.isJsonNull())
 			{
@@ -786,6 +855,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		}
 		else if (rootJsonElement.isJsonObject())
 		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
 			JsonObject root = rootJsonElement.getAsJsonObject();
 			if (root == null || root.isJsonNull())
 			{
@@ -827,6 +897,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		}
 		else if (rootJsonElement.isJsonObject())
 		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
 			JsonObject root = rootJsonElement.getAsJsonObject();
 			if (root == null || root.isJsonNull())
 			{
@@ -867,7 +938,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		if (rootJsonElement.isJsonArray())
 		{
 			JsonArray root = rootJsonElement.getAsJsonArray();
-			if(root != null && !root.isJsonNull())
+			if (root != null && !root.isJsonNull())
 			{
 				pagingInformation.setTotal(root.size());
 				return gson.fromJson(root, typeOfT);
@@ -875,6 +946,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		}
 		else if (rootJsonElement.isJsonObject())
 		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
 			JsonObject root = rootJsonElement.getAsJsonObject();
 			if (root == null || root.isJsonNull())
 			{
@@ -920,6 +992,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		}
 		else if (rootJsonElement.isJsonObject())
 		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
 			JsonObject root = rootJsonElement.getAsJsonObject();
 			if (root == null || root.isJsonNull())
 			{
@@ -962,10 +1035,13 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		if (rootJsonElement.isJsonArray())
 		{
 			JsonArray data = rootJsonElement.getAsJsonArray();
-			return gson.fromJson(data, new TypeToken<Map<String, Object>>(){}.getType());
+			return gson.fromJson(data, new TypeToken<Map<String, Object>>()
+			{
+			}.getType());
 		}
 		else if (rootJsonElement.isJsonObject())
 		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
 			JsonObject root = rootJsonElement.getAsJsonObject();
 			if (root == null || root.isJsonNull())
 			{
@@ -975,7 +1051,9 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 			if (root.has("data") && root.get("data").isJsonArray())
 			{
 				JsonArray data = root.getAsJsonArray("data");
-				return gson.fromJson(data, new TypeToken<Map<String, Object>>(){}.getType());
+				return gson.fromJson(data, new TypeToken<Map<String, Object>>()
+				{
+				}.getType());
 			}
 		}
 		return new ArrayList<>();
@@ -1023,12 +1101,13 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 			throw new Exception("Cannot convert JSON Array to JsonPrimitive");
 		}
 
-		if(rootJsonElement.isJsonPrimitive())
+		if (rootJsonElement.isJsonPrimitive())
 		{
 			return rootJsonElement.getAsJsonPrimitive();
 		}
 		else if (rootJsonElement.isJsonObject())
 		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
 			JsonObject root = rootJsonElement.getAsJsonObject();
 			if (root == null || root.isJsonNull())
 			{
@@ -1093,6 +1172,25 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		sb.append(response.getStatusText());
 		sb.append(response.getBody());
 		throw new Exception(sb.toString());
+	}
+
+	private void bubbleAnyDbFlareErrorMessages(JsonElement rootElement) throws Exception
+	{
+		if (rootElement != null)
+		{
+			if (!rootElement.isJsonNull() && rootElement.isJsonObject())
+			{
+				JsonObject root = rootElement.getAsJsonObject();
+				if (root.has("errors"))
+				{
+					JsonArray errors = root.getAsJsonArray("errors");
+					while (errors.iterator().hasNext())
+					{
+						throw new Exception(errors.iterator().next().getAsString());
+					}
+				}
+			}
+		}
 	}
 
 	//CODE FROM or BASED: https://gist.github.com/orip/3635246
