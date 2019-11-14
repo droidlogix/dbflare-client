@@ -86,6 +86,29 @@ public interface IDbFlareClient
 	<T> Map<String, Object> zupdate(String eid, Map<String, Object> urlParameters, T item) throws Exception;
 
 	/**
+	 * Update a record and expect the updated record as a result. This support bulk update
+	 * @param eid
+	 * @param urlParameters
+	 * @param item
+	 * @param typeOfT
+	 * @param <T>
+	 * @return
+	 * @throws Exception
+	 */
+	<T> List<T> zupdate(String eid, Map<String, Object> urlParameters, List<T> item, Type typeOfT) throws Exception;
+
+	/**
+	 * Update a record and expect the updated record as a result. This support bulk update
+	 * @param eid
+	 * @param urlParameters
+	 * @param item
+	 * @param <T>
+	 * @return
+	 * @throws Exception
+	 */
+	<T> List<Map<String, Object>> zupdate(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception;
+
+	/**
 	 * Delete a record and expect the deleted record as a result
 	 * @param eid
 	 * @param urlParameters
@@ -103,6 +126,15 @@ public interface IDbFlareClient
 	 * @throws Exception
 	 */
 	List<Map<String, Object>> zdelete(String eid, Map<String, Object> urlParameters) throws Exception;
+
+	/**
+	 * Get result as Map
+	 * @param eid
+	 * @param urlParameters
+	 * @return
+	 * @throws Exception
+	 */
+	Map<String, Object> zgetSingle(String eid, Map<String, Object> urlParameters) throws Exception;
 
 	/**
 	 * Get result as Object of T
@@ -124,6 +156,15 @@ public interface IDbFlareClient
 	 * @throws Exception
 	 */
 	<T> T zgetSingle(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception;
+
+	/**
+	 * Get result as List Map
+	 * @param eid
+	 * @param urlParameters
+	 * @return
+	 * @throws Exception
+	 */
+	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters) throws Exception;
 
 	/**
 	 * Get result as List of T

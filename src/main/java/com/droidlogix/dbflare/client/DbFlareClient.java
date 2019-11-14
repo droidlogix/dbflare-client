@@ -120,6 +120,8 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 	//region TRANSACTION
 
+	//region INSERT
+
 	@Override
 	public <T> T zinsert(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
 	{
@@ -160,7 +162,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				.queryString(urlParameters)
 				.body(objectMapper.writeValueAsString(item))
 				.asStringAsync();
-		return parseToList(httpResponse, typeOfT);
+		return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 	}
 
 	@Override
@@ -175,46 +177,44 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				.queryString(urlParameters)
 				.body(objectMapper.writeValueAsString(item))
 				.asStringAsync();
-		return parseToList(httpResponse, new TypeToken<List<Map<String, Object>>>()
-		{
-		}.getType());
+		return parseToListMap(httpResponse);
 	}
+
+	//endregion
+
+	//region UPDATE
 
 	@Override
 	public <T> T zupdate(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
+		List<T> payload = new ArrayList<>();
+		payload.add(item);
 
-		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
+		List<T> result = zupdate(eid, urlParameters, payload, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
+		if (result != null && !result.isEmpty())
 		{
-			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parse(httpResponse, typeOfT);
+			return result.get(0);
 		}
-		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parse(httpResponse, typeOfT);
-		}
-		else
-		{
-			throw new Exception("Invalid HTTP METHOD Mapping");
-		}
+		return null;
 	}
 
 	@Override
 	public <T> Map<String, Object> zupdate(String eid, Map<String, Object> urlParameters, T item) throws Exception
 	{
+		List<T> payload = new ArrayList<>();
+		payload.add(item);
+
+		List<Map<String, Object>> result = zupdate(eid, urlParameters, payload);
+		if (result != null && !result.isEmpty())
+		{
+			return result.get(0);
+		}
+		return null;
+	}
+
+	@Override
+	public <T> List<T> zupdate(String eid, Map<String, Object> urlParameters, List<T> item, Type typeOfT) throws Exception
+	{
 		Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
@@ -226,7 +226,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 					.queryString(urlParameters)
 					.body(objectMapper.writeValueAsString(item))
 					.asStringAsync();
-			return parseToMap(httpResponse);
+			return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
 		{
@@ -236,13 +236,49 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 					.queryString(urlParameters)
 					.body(objectMapper.writeValueAsString(item))
 					.asStringAsync();
-			return parseToMap(httpResponse);
+			return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 		else
 		{
 			throw new Exception("Invalid HTTP METHOD Mapping");
 		}
 	}
+
+	@Override
+	public <T> List<Map<String, Object>> zupdate(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception
+	{
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return parseToListMap(httpResponse);
+		}
+		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
+		{
+			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.body(objectMapper.writeValueAsString(item))
+					.asStringAsync();
+			return parseToListMap(httpResponse);
+		}
+		else
+		{
+			throw new Exception("Invalid HTTP METHOD Mapping");
+		}
+	}
+
+	//endregion
+
+	//region DELETE
 
 	@Override
 	public <T> List<T> zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
@@ -287,9 +323,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return parseToList(httpResponse, new TypeToken<List<Map<String, Object>>>()
-			{
-			}.getType());
+			return parseToListMap(httpResponse);
 		}
 		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
 		{
@@ -298,9 +332,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 					.queryString("eid", eid)
 					.queryString(urlParameters)
 					.asStringAsync();
-			return parseToList(httpResponse, new TypeToken<List<Map<String, Object>>>()
-			{
-			}.getType());
+			return parseToListMap(httpResponse);
 		}
 		else
 		{
@@ -310,7 +342,25 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 	//endregion
 
+	//endregion
+
 	//region RETRIEVAL
+
+	//region GET SINGLE
+
+	@Override
+	public Map<String, Object> zgetSingle(String eid, Map<String, Object> urlParameters) throws Exception
+	{
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+		return parseToMap(httpResponse);
+	}
 
 	@Override
 	public <T> T zgetSingle(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
@@ -329,7 +379,32 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	@Override
 	public <T> T zgetSingle(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception
 	{
-		return null;
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync();
+		return parse(httpResponse, objectAssembler);
+	}
+
+	//endregion
+
+	//region GET LIST
+
+	@Override
+	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters) throws Exception
+	{
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		return parseToListMap(Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync());
 	}
 
 	@Override
@@ -342,7 +417,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				.headers(headers)
 				.queryString("eid", eid)
 				.queryString(urlParameters)
-				.asStringAsync(), typeOfT);
+				.asStringAsync(), TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 	}
 
 	@Override
@@ -370,7 +445,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 					.headers(headers)
 					.queryString("eid", eid)
 					.queryString(urlParameters)
-					.asStringAsync(), typeOfT);
+					.asStringAsync(), TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 		else
 		{
@@ -378,7 +453,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 					.headers(headers)
 					.queryString("eid", eid)
 					.queryString(urlParameters)
-					.asStringAsync(), pagingInformation, typeOfT);
+					.asStringAsync(), pagingInformation, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 	}
 
@@ -396,7 +471,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		{
 			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
 		}
-		return parseToList(request.asStringAsync(), typeOfT);
+		return parseToList(request.asStringAsync(), TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 	}
 
 	@Override
@@ -416,11 +491,11 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 		if (pagingInformation == null)
 		{
-			return parseToList(request.asStringAsync(), typeOfT);
+			return parseToList(request.asStringAsync(), TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 		else
 		{
-			return parseToList(request.asStringAsync(), pagingInformation, typeOfT);
+			return parseToList(request.asStringAsync(), pagingInformation, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 	}
 
@@ -435,6 +510,8 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	{
 		throw new Exception("Not implement method");
 	}
+
+	//endregion
 
 	@Override
 	public String zgetJSON(String eid, Map<String, Object> urlParameters) throws Exception
@@ -529,7 +606,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	//region PARSE OBJECT
 
 	@Override
-	public <T> T parse(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
+	public  <T> T parse(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
 	{
 		Gson gson = getGsonWithSerializerDeserializer();
 
@@ -557,7 +634,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return null;
 			}
 
-			if (root.has("data"))
+			if (root.has("data") && !root.get("data").isJsonNull())
 			{
 				JsonObject data = root.getAsJsonObject("data");
 				return gson.fromJson(data, typeOfT);
@@ -597,7 +674,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return null;
 			}
 
-			if (root.has("data"))
+			if (root.has("data") && !root.get("data").isJsonNull())
 			{
 				JsonObject data = root.getAsJsonObject("data");
 				return objectAssembler.assemble(data);
@@ -639,7 +716,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return null;
 			}
 
-			if (root.has("data"))
+			if (root.has("data") && !root.get("data").isJsonNull())
 			{
 				JsonObject data = root.getAsJsonObject("data");
 				return gson.fromJson(data, new TypeToken<Map<String, Object>>()
@@ -730,7 +807,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return new ArrayList<>();
 			}
 
-			if (root.has("data"))
+			if (root.has("data") && root.get("data").isJsonArray())
 			{
 				JsonArray data = root.getAsJsonArray("data");
 				List<T> tmpList = new ArrayList<>();
@@ -824,7 +901,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return new ArrayList<>();
 			}
 
-			if (root.has("data"))
+			if (root.has("data") && root.get("data").isJsonArray())
 			{
 				JsonArray data = root.getAsJsonArray("data");
 				pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
@@ -932,7 +1009,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return null;
 			}
 
-			if (root.has("data"))
+			if (root.has("data") || !root.get("data").isJsonNull())
 			{
 				return root.getAsJsonObject("data").getAsJsonPrimitive();
 			}
