@@ -727,7 +727,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return null;
 			}
 
-			if (root.has("data") && !root.get("data").isJsonNull())
+			if (root.has("data"))
 			{
 				JsonObject data = root.getAsJsonObject("data");
 				return gson.fromJson(data, typeOfT);
@@ -768,7 +768,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return null;
 			}
 
-			if (root.has("data") && !root.get("data").isJsonNull())
+			if (root.has("data"))
 			{
 				JsonObject data = root.getAsJsonObject("data");
 				return objectAssembler.assemble(data);
@@ -811,7 +811,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return null;
 			}
 
-			if (root.has("data") && !root.get("data").isJsonNull())
+			if (root.has("data"))
 			{
 				JsonObject data = root.getAsJsonObject("data");
 				return gson.fromJson(data, new TypeToken<Map<String, Object>>()
@@ -862,10 +862,13 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return new ArrayList<>();
 			}
 
-			if (root.has("data") && root.get("data").isJsonArray())
+			if (root.has("data"))
 			{
-				JsonArray data = root.getAsJsonArray("data");
-				return gson.fromJson(data, typeOfT);
+				if(root.get("data").isJsonArray())
+				{
+					JsonArray data = root.getAsJsonArray("data");
+					return gson.fromJson(data, typeOfT);
+				}
 			}
 		}
 		return new ArrayList<>();
@@ -904,15 +907,18 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return new ArrayList<>();
 			}
 
-			if (root.has("data") && root.get("data").isJsonArray())
+			if (root.has("data"))
 			{
-				JsonArray data = root.getAsJsonArray("data");
-				List<T> tmpList = new ArrayList<>();
-				while (data.iterator().hasNext())
+				if(root.get("data").isJsonArray())
 				{
-					tmpList.add(objectAssembler.assemble(data.iterator().next()));
+					JsonArray data = root.getAsJsonArray("data");
+					List<T> tmpList = new ArrayList<>();
+					while (data.iterator().hasNext())
+					{
+						tmpList.add(objectAssembler.assemble(data.iterator().next()));
+					}
+					return tmpList;
 				}
-				return tmpList;
 			}
 		}
 		return new ArrayList<>();
@@ -954,11 +960,14 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return new ArrayList<>();
 			}
 
-			if (root.has("data") && root.get("data").isJsonArray())
+			if (root.has("data"))
 			{
-				JsonArray data = root.getAsJsonArray("data");
-				pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
-				return gson.fromJson(data, typeOfT);
+				if(root.get("data").isJsonArray())
+				{
+					JsonArray data = root.getAsJsonArray("data");
+					pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
+					return gson.fromJson(data, typeOfT);
+				}
 			}
 		}
 		return new ArrayList<>();
@@ -1000,16 +1009,19 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return new ArrayList<>();
 			}
 
-			if (root.has("data") && root.get("data").isJsonArray())
+			if (root.has("data"))
 			{
-				JsonArray data = root.getAsJsonArray("data");
-				pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
-				List<T> tmpList = new ArrayList<>();
-				while (data.iterator().hasNext())
+				if(root.get("data").isJsonArray())
 				{
-					tmpList.add(objectAssembler.assemble(data.iterator().next()));
+					JsonArray data = root.getAsJsonArray("data");
+					pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
+					List<T> tmpList = new ArrayList<>();
+					while (data.iterator().hasNext())
+					{
+						tmpList.add(objectAssembler.assemble(data.iterator().next()));
+					}
+					return tmpList;
 				}
-				return tmpList;
 			}
 		}
 		pagingInformation.setTotal(0);
@@ -1048,12 +1060,15 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return new ArrayList<>();
 			}
 
-			if (root.has("data") && root.get("data").isJsonArray())
+			if (root.has("data"))
 			{
-				JsonArray data = root.getAsJsonArray("data");
-				return gson.fromJson(data, new TypeToken<List<Map<String, Object>>>()
+				if(root.get("data").isJsonArray())
 				{
-				}.getType());
+					JsonArray data = root.getAsJsonArray("data");
+					return gson.fromJson(data, new TypeToken<List<Map<String, Object>>>()
+					{
+					}.getType());
+				}
 			}
 		}
 		return new ArrayList<>();
@@ -1114,7 +1129,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				return null;
 			}
 
-			if (root.has("data") || !root.get("data").isJsonNull())
+			if (root.has("data"))
 			{
 				return root.getAsJsonObject("data").getAsJsonPrimitive();
 			}
