@@ -1035,7 +1035,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		if (rootJsonElement.isJsonArray())
 		{
 			JsonArray data = rootJsonElement.getAsJsonArray();
-			return gson.fromJson(data, new TypeToken<Map<String, Object>>()
+			return gson.fromJson(data, new TypeToken<List<Map<String, Object>>>()
 			{
 			}.getType());
 		}
@@ -1051,7 +1051,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 			if (root.has("data") && root.get("data").isJsonArray())
 			{
 				JsonArray data = root.getAsJsonArray("data");
-				return gson.fromJson(data, new TypeToken<Map<String, Object>>()
+				return gson.fromJson(data, new TypeToken<List<Map<String, Object>>>()
 				{
 				}.getType());
 			}
