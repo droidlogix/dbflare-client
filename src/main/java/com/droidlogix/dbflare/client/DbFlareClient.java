@@ -1187,6 +1187,10 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 			Gson gson = getGsonWithSerializerDeserializer();
 			return gson.fromJson(response.getBody(), JsonElement.class);
 		}
+		else if(response.getStatus() == 401)
+		{
+			throw new Exception("Unauthorized");
+		}
 		StringBuilder sb = new StringBuilder("Invalid HTTP Response Code\n");
 		sb.append(response.getStatusText());
 		sb.append(response.getBody());
@@ -1205,7 +1209,11 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 					JsonArray errors = root.getAsJsonArray("errors");
 					while (errors.iterator().hasNext())
 					{
-						throw new Exception(errors.iterator().next().getAsString());
+						JsonElement e = errors.iterator().next();
+						if(e != null && !e.isJsonNull())
+						{
+							throw new Exception(e.getAsString());
+						}
 					}
 				}
 			}
