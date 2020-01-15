@@ -1210,10 +1210,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 					while (errors.iterator().hasNext())
 					{
 						JsonElement e = errors.iterator().next();
-						if(e != null && !e.isJsonNull())
-						{
-							throw new Exception(e.getAsString());
-						}
+						throw new Exception(e.getAsString());
 					}
 				}
 			}
