@@ -217,6 +217,8 @@ public interface IDbFlareClient
 	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters,
 	                     Map<String, Collection<?>> urlParameters2, IObjectAssembler objectAssembler) throws Exception;
 
+	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2) throws Exception;
+
 	/**
 	 * Get result as List of T. urlParameters2 is used for sending query parameters as collection. It is very useful in multiple filter query.
 	 * PagingInformation used as reference helps in paginating the results

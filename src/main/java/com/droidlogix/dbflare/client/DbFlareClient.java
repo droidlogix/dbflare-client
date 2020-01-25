@@ -607,6 +607,27 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		return parseToList(request.asStringAsync(), objectAssembler);
 	}
 
+	@Override
+	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2) throws Exception
+	{
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters);
+		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
+		{
+			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
+		}
+		return parseToListMap(Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync());
+	}
+
 	//endregion
 
 	@Override
