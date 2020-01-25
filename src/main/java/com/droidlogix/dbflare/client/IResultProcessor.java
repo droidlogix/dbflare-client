@@ -35,6 +35,8 @@ public interface IResultProcessor
 
 	List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse) throws Exception;
 
+	List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation) throws Exception;
+
 	String parseToJSONString(Future<HttpResponse<String>> httpResponse) throws Exception;
 
 	JsonPrimitive parseToJsonPrimitive(Future<HttpResponse<String>> httpResponse) throws Exception;

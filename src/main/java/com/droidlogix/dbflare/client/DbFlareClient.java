@@ -628,6 +628,40 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				.asStringAsync());
 	}
 
+	@Override
+	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation) throws Exception
+	{
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters);
+		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
+		{
+			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
+		}
+
+		if (pagingInformation == null)
+		{
+			return parseToListMap(Unirest.get(getBaseUrl() + "zget")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.asStringAsync());
+		}
+		else
+		{
+			//return parseToList(request.asStringAsync(), pagingInformation, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
+			return parseToListMap(Unirest.get(getBaseUrl() + "zget")
+					.headers(headers)
+					.queryString("eid", eid)
+					.queryString(urlParameters)
+					.asStringAsync());
+		}
+	}
+
 	//endregion
 
 	@Override
@@ -1096,6 +1130,60 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				}
 			}
 		}
+		return new ArrayList<>();
+	}
+
+	@Override
+	public List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation) throws Exception
+	{
+		Gson gson = getGsonWithSerializerDeserializer();
+
+		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		{
+			pagingInformation.setTotal(0);
+			return new ArrayList<>();
+		}
+
+		if (rootJsonElement.isJsonPrimitive())
+		{
+			throw new Exception("Cannot convert JSON Primitive to List<T>");
+		}
+
+		if (rootJsonElement.isJsonArray())
+		{
+			JsonArray root = rootJsonElement.getAsJsonArray();
+			if (root != null && !root.isJsonNull())
+			{
+				pagingInformation.setTotal(root.size());
+				return gson.fromJson(root, new TypeToken<List<Map<String, Object>>>()
+				{
+				}.getType());
+			}
+		}
+		else if (rootJsonElement.isJsonObject())
+		{
+			bubbleAnyDbFlareErrorMessages(rootJsonElement);
+			JsonObject root = rootJsonElement.getAsJsonObject();
+			if (root == null || root.isJsonNull())
+			{
+				pagingInformation.setTotal(0);
+				return new ArrayList<>();
+			}
+
+			if (root.has("data"))
+			{
+				if(root.get("data").isJsonArray())
+				{
+					JsonArray data = root.getAsJsonArray("data");
+					pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
+					return gson.fromJson(data, new TypeToken<List<Map<String, Object>>>()
+					{
+					}.getType());
+				}
+			}
+		}
+		pagingInformation.setTotal(0);
 		return new ArrayList<>();
 	}
 

@@ -234,6 +234,8 @@ public interface IDbFlareClient
 	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters,
 	                     Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation, Type typeOfT) throws Exception;
 
+	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation) throws Exception;
+
 	/**
 	 * Get the result as JSON String
 	 * @param eid
