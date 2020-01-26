@@ -645,20 +645,11 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 		if (pagingInformation == null)
 		{
-			return parseToListMap(Unirest.get(getBaseUrl() + "zget")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.asStringAsync());
+			return parseToListMap(request.asStringAsync());
 		}
 		else
 		{
-			//return parseToList(request.asStringAsync(), pagingInformation, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-			return parseToListMap(Unirest.get(getBaseUrl() + "zget")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.asStringAsync());
+			return parseToListMap(request.asStringAsync(), pagingInformation);
 		}
 	}
 
