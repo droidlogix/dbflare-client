@@ -478,6 +478,19 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	}
 
 	@Override
+	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation) throws Exception
+	{
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		return parseToListMap(Unirest.get(getBaseUrl() + "zget")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync(), pagingInformation);
+	}
+
+	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
 	{
 		Map<String, String> headers = apiKeyCheckpoint();
