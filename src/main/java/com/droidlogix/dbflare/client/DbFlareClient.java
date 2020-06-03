@@ -754,6 +754,19 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		return jsonPrimitive.getAsDouble();
 	}
 
+	@Override
+	public String zexecuteJSON(String eid, Map<String, Object> urlParameters) throws Exception {
+		Map<String, String> headers = apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		return parseToJSONString(Unirest.post(getBaseUrl() + "zexecute")
+				.headers(headers)
+				.queryString("eid", eid)
+				.queryString(urlParameters)
+				.asStringAsync());
+	}
+
+
 	//endregion
 
 	//region RESULT PROCESSOR

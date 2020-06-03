@@ -293,4 +293,13 @@ public interface IDbFlareClient
 	 * @throws Exception
 	 */
 	double zgetDouble(String eid, Map<String, Object> urlParameters) throws Exception;
+
+	/**
+	 * Execute a non select native query
+	 * @param eid
+	 * @param urlParameters
+	 * @return String
+	 * @throws Exception
+	 */
+	String zexecuteJSON(String eid, Map<String, Object> urlParameters) throws Exception;
 }
