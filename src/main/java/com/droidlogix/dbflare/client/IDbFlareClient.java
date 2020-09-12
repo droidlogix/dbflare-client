@@ -220,6 +220,11 @@ public interface IDbFlareClient
 
 	List<Map<String, Object>> zgetList(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection, Pagination pagination) throws Exception;
 
+
+	String zgetJSONString(String eid, Map<String, Object> queryParams) throws Exception;
+
+	String zgetJSONString(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection) throws Exception;
+
 	/**
 	 * Get the result as String
 	 * @param eid

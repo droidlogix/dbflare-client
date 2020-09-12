@@ -91,7 +91,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	//endregion
 
-	private HttpRequest prepareHttpRequest(HttpMethod httpMethod, String url, Map<String, String> routeParams, Map<String, Object> queryParams) throws Exception {
+	private HttpRequest prepareHttpRequest(HttpMethod httpMethod, String url, Map<String, String> routeParams, Map<String, Object> queryParams, Map<String, Collection> queryParamsCollection) throws Exception {
 		Map<String, String> headers = this.apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
@@ -105,6 +105,13 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 						httpRequest.routeParam(item.getKey(), item.getValue());
 					}
 				}
+
+				if(queryParamsCollection != null && !queryParamsCollection.isEmpty()) {
+					for(Map.Entry<String, String> item : routeParams.entrySet()) {
+						httpRequest.routeParam(item.getKey(), item.getValue());
+					}
+				}
+
 				return httpRequest;
 			}
 			default: {
@@ -243,6 +250,15 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 				url,
 				routeParams,
 				queryParams).asStringAsync());
+	}
+
+	@Override
+	public IResultProcessor zGet(String url, Map<String, String> routeParams, Map<String, Object> queryParams, Map<String, Collection> queryParamsCollection) throws Exception {
+		return new ResultProcessor(prepareHttpRequest(HttpMethod.GET,
+				url,
+				routeParams,
+				queryParams,
+				queryParamsCollection).asStringAsync());
 	}
 
 	//region TRANSACTION
@@ -582,37 +598,25 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 	//endregion
 
 	@Override
-	public String zgetJSON(String eid, Map<String, Object> queryParams) throws Exception
+	public String zgetJSONString(String eid, Map<String, Object> queryParams) throws Exception
 	{
 		Map<String, String> routeParams = new HashMap<>();
 		routeParams.put("eid", eid);
-		return zGet("/zget/{eid}", routeParams, queryParams).parse
-
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		return parseToJSONString(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(queryParams)
-				.asStringAsync());
+		return zGet("/zget/{eid}", routeParams, queryParams).parseToJSONString();
 	}
 
 	@Override
-	public String zgetJSON(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection) throws Exception
+	public String zgetJSONString(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
 
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(queryParams);
 		for (Map.Entry<String, Collection<?>> item : queryParamsCollection.entrySet())
 		{
 			request.queryString(item.getKey(), queryParamsCollection.get(item.getKey()));
 		}
-		return parseToJSONString(request.asStringAsync());
+
+		return zGet("/zget/{eid}", routeParams, queryParams).parseToJSONString();
 	}
 
 	@Override

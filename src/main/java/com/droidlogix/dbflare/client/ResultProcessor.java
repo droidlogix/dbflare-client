@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.request.HttpRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -319,9 +317,27 @@ public class ResultProcessor implements IResultProcessor {
 
     @Override
     public String parseToJSONString() throws Exception {
-        Gson gson = getGsonWithSerializerDeserializer();
-
         JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+        if (rootJsonElement == null || rootJsonElement.isJsonNull())
+        {
+            return null;
+        }
+
+        if (rootJsonElement.isJsonArray())
+        {
+            return rootJsonElement.getAsJsonArray().toString();
+        }
+
+        if (rootJsonElement.isJsonObject())
+        {
+            return rootJsonElement.getAsJsonObject().toString();
+        }
+
+        if (rootJsonElement.isJsonPrimitive())
+        {
+            return rootJsonElement.getAsJsonPrimitive().toString();
+        }
+        return null;
     }
 
     //region RESULT PROCESSOR

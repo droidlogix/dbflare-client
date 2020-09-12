@@ -1,5 +1,6 @@
 package com.droidlogix.dbflare.client;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -30,4 +31,6 @@ public interface IRestClient {
     IResultProcessor zGet(String url) throws Exception;
 
     IResultProcessor zGet(String url, Map<String, String> routeParams, Map<String, Object> queryParams) throws Exception;
+
+    IResultProcessor zGet(String url, Map<String, String> routeParams, Map<String, Object> queryParams, Map<String, Collection> queryParamsCollection) throws Exception;
 }
