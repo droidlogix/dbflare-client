@@ -34,6 +34,8 @@ public interface IResultProcessor
 
 	JsonNode parseToJsonNode() throws Exception;
 
+	String parseToJSONString() throws Exception;
+
 	//region ORIGINAL METHODS
 
 	//Map<String, Object> parseToMap(Future<HttpResponse<String>> httpResponse) throws Exception;

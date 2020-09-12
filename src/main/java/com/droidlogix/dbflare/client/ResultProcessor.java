@@ -317,6 +317,13 @@ public class ResultProcessor implements IResultProcessor {
         return null;
     }
 
+    @Override
+    public String parseToJSONString() throws Exception {
+        Gson gson = getGsonWithSerializerDeserializer();
+
+        JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+    }
+
     //region RESULT PROCESSOR
 
     //region PARSE OBJECT

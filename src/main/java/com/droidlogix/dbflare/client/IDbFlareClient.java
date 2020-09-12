@@ -14,11 +14,6 @@ import java.util.Map;
 
 public interface IDbFlareClient
 {
-	String HTTP_METHOD_POST = "post";
-	String HTTP_METHOD_PUT = "put";
-	String HTTP_METHOD_DELETE =  "delete";
-	String HTTP_METHOD_GET = "get";
-
 	/**
 	 * Insert a record and expect the generated record as a result.
 	 * @param eid
@@ -206,14 +201,14 @@ public interface IDbFlareClient
 	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters,
 	                     Map<String, Collection<?>> urlParameters2, IObjectAssembler objectAssembler) throws Exception;
 
-	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2) throws Exception;
+	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> queryParamsCollection) throws Exception;
 
 	/**
-	 * Get result as List of T. urlParameters2 is used for sending query parameters as collection. It is very useful in multiple filter query.
+	 * Get result as List of T. queryParamsCollection is used for sending query parameters as collection. It is very useful in multiple filter query.
 	 * PagingInformation used as reference helps in paginating the results
 	 * @param eid
 	 * @param urlParameters
-	 * @param urlParameters2 used for Collection values
+	 * @param queryParamsCollection used for Collection values
 	 * @param pagination
 	 * @param typeOfT
 	 * @param <T>
@@ -221,72 +216,52 @@ public interface IDbFlareClient
 	 * @throws Exception
 	 */
 	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters,
-	                     Map<String, Collection<?>> urlParameters2, Pagination pagination, Type typeOfT) throws Exception;
+	                     Map<String, Collection<?>> queryParamsCollection, Pagination pagination, Type typeOfT) throws Exception;
 
-	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, Pagination pagination) throws Exception;
-
-	/**
-	 * Get the result as JSON String
-	 * @param eid
-	 * @param urlParameters
-	 * @return String
-	 * @throws Exception
-	 */
-	String zgetJSON(String eid, Map<String, Object> urlParameters) throws Exception;
-
-	/**
-	 * Get the result as JSON String
-	 * @param eid
-	 * @param urlParameters
-	 * @param urlParameters2 used for Collection values
-	 * @return String
-	 * @throws Exception
-	 */
-	String zgetJSON(String eid, Map<String, Object> urlParameters,
-	                Map<String, Collection<?>> urlParameters2) throws Exception;
+	List<Map<String, Object>> zgetList(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection, Pagination pagination) throws Exception;
 
 	/**
 	 * Get the result as String
 	 * @param eid
-	 * @param urlParameters
+	 * @param queryParams
 	 * @return int
 	 * @throws Exception
 	 */
-	String zgetString(String eid, Map<String, Object> urlParameters) throws Exception;
+	String zgetString(String eid, Map<String, Object> queryParams) throws Exception;
 
 	/**
 	 * Get the result as String
 	 * @param eid
-	 * @param urlParameters
+	 * @param queryParams
 	 * @return String
 	 * @throws Exception
 	 */
-	long zgetInteger(String eid, Map<String, Object> urlParameters) throws Exception;
+	long zgetInteger(String eid, Map<String, Object> queryParams) throws Exception;
 
 	/**
 	 * Get the result as long
 	 * @param eid
-	 * @param urlParameters
+	 * @param queryParams
 	 * @return long
 	 * @throws Exception
 	 */
-	long zgetLong(String eid, Map<String, Object> urlParameters) throws Exception;
+	long zgetLong(String eid, Map<String, Object> queryParams) throws Exception;
 
 	/**
 	 * Get the result as double
 	 * @param eid
-	 * @param urlParameters
+	 * @param queryParams
 	 * @return long
 	 * @throws Exception
 	 */
-	double zgetDouble(String eid, Map<String, Object> urlParameters) throws Exception;
+	double zgetDouble(String eid, Map<String, Object> queryParams) throws Exception;
 
 	/**
 	 * Execute a non select native query
 	 * @param eid
-	 * @param urlParameters
+	 * @param queryParams
 	 * @return String
 	 * @throws Exception
 	 */
-	String zexecuteJSON(String eid, Map<String, Object> urlParameters) throws Exception;
+	String zexecuteJSON(String eid, Map<String, Object> queryParams) throws Exception;
 }
