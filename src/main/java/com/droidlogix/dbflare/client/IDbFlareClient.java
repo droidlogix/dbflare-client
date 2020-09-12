@@ -1,5 +1,7 @@
 package com.droidlogix.dbflare.client;
 
+import com.droidlogix.dbflare.client.models.Pagination;
+
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
@@ -20,48 +22,44 @@ public interface IDbFlareClient
 	/**
 	 * Insert a record and expect the generated record as a result.
 	 * @param eid
-	 * @param urlParameters
 	 * @param item
 	 * @param typeOfT
 	 * @param <T>
 	 * @return
 	 * @throws Exception
 	 */
-	<T> T zinsert(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception;
+	<T> T zinsert(String eid, T item, Type typeOfT) throws Exception;
 
 	/**
 	 * Insert a record and expect the generated record as a result.
 	 * @param eid
-	 * @param urlParameters
 	 * @param item
 	 * @param <T>
 	 * @return
 	 * @throws Exception
 	 */
-	<T> Map<String, Object> zinsert(String eid, Map<String, Object> urlParameters, T item) throws Exception;
+	<T> Map<String, Object> zinsert(String eid, T item) throws Exception;
 
 	/**
 	 * Insert a record and expect the generated record as a result. This support bulk insert
 	 * @param eid
-	 * @param urlParameters
 	 * @param item
 	 * @param typeOfT
 	 * @param <T>
 	 * @return
 	 * @throws Exception
 	 */
-	<T> List<T> zinsert(String eid, Map<String, Object> urlParameters, List<T> item, Type typeOfT) throws Exception;
+	<T> List<T> zinsert(String eid, List<T> item, Type typeOfT) throws Exception;
 
 	/**
 	 * Insert a record and expect the generated record as a result. This support bulk insert
 	 * @param eid
-	 * @param urlParameters
 	 * @param item
 	 * @param <T>
 	 * @return
 	 * @throws Exception
 	 */
-	<T> List<Map<String, Object>> zinsert(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception;
+	<T> List<Map<String, Object>> zinsert(String eid, List<T> item) throws Exception;
 
 	/**
 	 * Update a record and expect the updated record as a result.
@@ -111,51 +109,40 @@ public interface IDbFlareClient
 	/**
 	 * Delete a record and expect the deleted record as a result
 	 * @param eid
-	 * @param urlParameters
-	 * @param <T>
-	 * @return T result
+	 * @param queryParams
 	 * @throws Exception
 	 */
-	<T> List<T> zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception;
-
-	/**
-	 * Delete a record and expect the deleted record as a result
-	 * @param eid
-	 * @param urlParameters
-	 * @return
-	 * @throws Exception
-	 */
-	List<Map<String, Object>> zdelete(String eid, Map<String, Object> urlParameters) throws Exception;
+	void zdelete(String eid, Map<String, Object> queryParams) throws Exception;
 
 	/**
 	 * Get result as Map
 	 * @param eid
-	 * @param urlParameters
+	 * @param queryParams
 	 * @return
 	 * @throws Exception
 	 */
-	Map<String, Object> zgetSingle(String eid, Map<String, Object> urlParameters) throws Exception;
+	Map<String, Object> zgetOne(String eid, Map<String, Object> queryParams) throws Exception;
 
 	/**
 	 * Get result as Object of T
 	 * @param eid
-	 * @param urlParameters
+	 * @param queryParams
 	 * @param typeOfT
 	 * @return Object of T
 	 * @throws Exception
 	 */
-	<T> T zgetSingle(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception;
+	<T> T zgetOne(String eid, Map<String, Object> queryParams, Type typeOfT) throws Exception;
 
 	/**
 	 * Get result as Object of T. Provide an IObjectAssembler for custom object generation and mapping
 	 * @param eid
-	 * @param urlParameters
+	 * @param queryParams
 	 * @param objectAssembler
 	 * @param <T>
 	 * @return
 	 * @throws Exception
 	 */
-	<T> T zgetSingle(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception;
+	<T> T zgetOne(String eid, Map<String, Object> queryParams, IObjectAssembler objectAssembler) throws Exception;
 
 	/**
 	 * Get result as List Map
@@ -166,7 +153,7 @@ public interface IDbFlareClient
 	 */
 	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters) throws Exception;
 
-	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation) throws Exception;
+	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Pagination pagination) throws Exception;
 
 	/**
 	 * Get result as List of T
@@ -193,15 +180,15 @@ public interface IDbFlareClient
 	 * Get result as List of T. PagingInformation used as reference helps in paginating the results
 	 * @param eid
 	 * @param urlParameters
-	 * @param pagingInformation
+	 * @param pagination
 	 * @param typeOfT
 	 * @param <T>
 	 * @return List of T
 	 * @throws Exception
 	 */
-	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, Type typeOfT) throws Exception;
+	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Pagination pagination, Type typeOfT) throws Exception;
 
-	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception;
+	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Pagination pagination, IObjectAssembler objectAssembler) throws Exception;
 
 	/**
 	 *  Get result as List of T. urlParameters2 is used for sending query parameters as collection. It is very useful in multiple filter query.
@@ -227,16 +214,16 @@ public interface IDbFlareClient
 	 * @param eid
 	 * @param urlParameters
 	 * @param urlParameters2 used for Collection values
-	 * @param pagingInformation
+	 * @param pagination
 	 * @param typeOfT
 	 * @param <T>
 	 * @return List of T
 	 * @throws Exception
 	 */
 	<T> List<T> zgetList(String eid, Map<String, Object> urlParameters,
-	                     Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation, Type typeOfT) throws Exception;
+	                     Map<String, Collection<?>> urlParameters2, Pagination pagination, Type typeOfT) throws Exception;
 
-	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation) throws Exception;
+	List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, Pagination pagination) throws Exception;
 
 	/**
 	 * Get the result as JSON String

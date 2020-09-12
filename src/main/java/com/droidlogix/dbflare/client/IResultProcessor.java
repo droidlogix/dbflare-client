@@ -1,5 +1,7 @@
 package com.droidlogix.dbflare.client;
 
+import com.droidlogix.dbflare.client.models.Pagination;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.*;
 import com.mashape.unirest.http.HttpResponse;
 
@@ -10,34 +12,45 @@ import java.util.concurrent.Future;
 
 public interface IResultProcessor
 {
-	/**
-	 * Convert DbFlare result into Object of T
-	 *
-	 * @param httpResponse
-	 * @param typeOfT
-	 * @param <T>
-	 * @return
-	 * @throws Exception
-	 */
-	<T> T parse(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception;
+	JsonElement parse() throws Exception;
 
-	<T> T parse(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception;
+	<T> T parse(Type typeOfT) throws Exception;
 
-	Map<String, Object> parseToMap(Future<HttpResponse<String>> httpResponse) throws Exception;
+	<T> T parse(IObjectAssembler objectAssembler) throws Exception;
 
-	<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception;
+	Map<String, Object> parseToMap() throws Exception;
 
-	<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception;
+	<T> List<T> parseToList(Type typeOfT) throws Exception;
 
-	<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception;
+	<T> List<T> parseToList(Type typeOfT, Pagination pagination) throws Exception;
 
-	<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception;
+	<T> List<T> parseToList(IObjectAssembler objectAssembler) throws Exception;
 
-	List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse) throws Exception;
+	List<Map<String, Object>> parseToListMap() throws Exception;
 
-	List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation) throws Exception;
+	List<Map<String, Object>> parseToListMap(Pagination pagination) throws Exception;
 
-	String parseToJSONString(Future<HttpResponse<String>> httpResponse) throws Exception;
+	JsonPrimitive parseToJsonPrimitive() throws Exception;
 
-	JsonPrimitive parseToJsonPrimitive(Future<HttpResponse<String>> httpResponse) throws Exception;
+	JsonNode parseToJsonNode() throws Exception;
+
+	//region ORIGINAL METHODS
+
+	//Map<String, Object> parseToMap(Future<HttpResponse<String>> httpResponse) throws Exception;
+
+	//<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception;
+
+	//<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception;
+
+	//<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, Pagination pagination, Type typeOfT) throws Exception;
+
+	//<T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, Pagination pagination, IObjectAssembler objectAssembler) throws Exception;
+
+	//List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse) throws Exception;
+
+	//List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse, Pagination pagination) throws Exception;
+
+	//JsonPrimitive parseToJsonPrimitive(Future<HttpResponse<String>> httpResponse) throws Exception;
+
+	//endregion
 }

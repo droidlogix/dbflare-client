@@ -1,17 +1,16 @@
 package com.droidlogix.dbflare.client;
 
+import com.droidlogix.dbflare.client.models.Pagination;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
+import com.mashape.unirest.http.HttpMethod;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.HttpRequest;
-import org.apache.commons.lang3.StringUtils;
+import com.mashape.unirest.request.HttpRequestWithBody;
 
 import java.lang.reflect.Type;
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Future;
 
@@ -19,20 +18,19 @@ import java.util.concurrent.Future;
  * @author John Pili
  * @since 2016-11-15
  */
-public class DbFlareClient implements IDbFlareClient, IResultProcessor
+public class DbFlareClient implements IDbFlareClient, IRestClient
 {
 	private ObjectMapper objectMapper;
-	private String baseUrl;
+	private String baseURL;
 	private boolean isKeyRequired;
 	private String apiKey;
-	private Map<String, String> httpMethodMapping;
 
 	//region BUILDER
 
 	public static class Config
 	{
 		private ObjectMapper objectMapper;
-		private String baseUrl;
+		private String baseURL;
 		private boolean isKeyRequired;
 		private String apiKey;
 		private Map<String, String> httpMethodMapping;
@@ -45,7 +43,7 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 		public Config baseUrl(String baseUrl)
 		{
-			this.baseUrl = baseUrl;
+			this.baseURL = baseUrl;
 			return this;
 		}
 
@@ -61,32 +59,15 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 			return this;
 		}
 
-		public Config httpMethodMapping(Map<String, String> httpMethodMapping)
-		{
-			if (httpMethodMapping != null && !httpMethodMapping.isEmpty())
-			{
-				this.httpMethodMapping = new HashMap<>();
-				this.httpMethodMapping.put(HTTP_METHOD_POST, httpMethodMapping.getOrDefault(HTTP_METHOD_POST, "post")); // Override HTTP Method Mapping
-				this.httpMethodMapping.put(HTTP_METHOD_PUT, httpMethodMapping.getOrDefault(HTTP_METHOD_PUT, "put")); // Override HTTP Method Mapping
-				this.httpMethodMapping.put(HTTP_METHOD_DELETE, httpMethodMapping.getOrDefault(HTTP_METHOD_DELETE, "delete")); // Override HTTP Method Mapping
-				this.httpMethodMapping.put(HTTP_METHOD_GET, httpMethodMapping.getOrDefault(HTTP_METHOD_GET, "get")); // Override HTTP Method Mapping
-			}
-			else
-			{
-				this.httpMethodMapping = null;
-			}
-			return this;
-		}
-
 		public DbFlareClient build()
 		{
 			if (this.httpMethodMapping == null)
 			{
-				return new DbFlareClient(this.objectMapper, this.baseUrl, this.isKeyRequired, this.apiKey);
+				return new DbFlareClient(this.objectMapper, this.baseURL, this.isKeyRequired, this.apiKey);
 			}
 			else
 			{
-				return new DbFlareClient(this.objectMapper, this.baseUrl, this.isKeyRequired, this.apiKey, this.httpMethodMapping);
+				return new DbFlareClient(this.objectMapper, this.baseURL, this.isKeyRequired, this.apiKey, this.httpMethodMapping);
 			}
 		}
 	}
@@ -95,44 +76,186 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 	//region CONSTRUCTOR
 
-	private DbFlareClient(ObjectMapper objectMapper, String baseUrl, boolean isKeyRequired, String apiKey)
+	private DbFlareClient(ObjectMapper objectMapper, String baseURL, boolean isKeyRequired, String apiKey)
 	{
 		this.objectMapper = objectMapper;
-		this.baseUrl = baseUrl;
+		this.baseURL = baseURL;
 		this.isKeyRequired = isKeyRequired;
 		this.apiKey = apiKey;
-		this.httpMethodMapping = new HashMap<>();
-		this.httpMethodMapping.put(HTTP_METHOD_POST, "post"); // Default Mapping
-		this.httpMethodMapping.put(HTTP_METHOD_PUT, "put"); // Default Mapping
-		this.httpMethodMapping.put(HTTP_METHOD_DELETE, "delete"); // Default Mapping
-		this.httpMethodMapping.put(HTTP_METHOD_GET, "get"); // Default Mapping
 	}
 
-	private DbFlareClient(ObjectMapper objectMapper, String baseUrl, boolean isKeyRequired, String apiKey, Map<String, String> httpMethodMapping)
+	private DbFlareClient(ObjectMapper objectMapper, String baseURL, boolean isKeyRequired, String apiKey, Map<String, String> httpMethodMapping)
 	{
-		this(objectMapper, baseUrl, isKeyRequired, apiKey);
-		if(httpMethodMapping != null)
-		{
-			this.httpMethodMapping.put(HTTP_METHOD_POST, httpMethodMapping.getOrDefault(HTTP_METHOD_POST, "post")); // Override HTTP Method Mapping
-			this.httpMethodMapping.put(HTTP_METHOD_PUT, httpMethodMapping.getOrDefault(HTTP_METHOD_PUT, "put")); // Override HTTP Method Mapping
-			this.httpMethodMapping.put(HTTP_METHOD_DELETE, httpMethodMapping.getOrDefault(HTTP_METHOD_DELETE, "delete")); // Override HTTP Method Mapping
-			this.httpMethodMapping.put(HTTP_METHOD_GET, httpMethodMapping.getOrDefault(HTTP_METHOD_GET, "get")); // Override HTTP Method Mapping
-		}
+		this(objectMapper, baseURL, isKeyRequired, apiKey);
 	}
 
 	//endregion
+
+	private HttpRequest prepareHttpRequest(HttpMethod httpMethod, String url, Map<String, String> routeParams, Map<String, Object> queryParams) throws Exception {
+		Map<String, String> headers = this.apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		switch(httpMethod) {
+			case GET: {
+				HttpRequest httpRequest = Unirest.get(this.getBaseURL() + url)
+						.headers(headers)
+						.queryString(queryParams);
+				if(routeParams != null && !routeParams.isEmpty()) {
+					for(Map.Entry<String, String> item : routeParams.entrySet()) {
+						httpRequest.routeParam(item.getKey(), item.getValue());
+					}
+				}
+				return httpRequest;
+			}
+			default: {
+				break;
+			}
+		}
+		throw new Exception("Unmapped HTTP Method for prepareHttpRequest");
+	}
+
+	private HttpRequestWithBody prepareHttpRequestWithBody(HttpMethod httpMethod, String url, Map<String, String> routeParams, Map<String, Object> queryParams) throws Exception {
+		Map<String, String> headers = this.apiKeyCheckpoint();
+		headers.put("accept", "application/json;charset=UTF-8");
+
+		switch(httpMethod) {
+			case POST: {
+				HttpRequestWithBody httpRequestWithBody = Unirest.post(this.getBaseURL() + url)
+						.headers(headers)
+						.queryString(queryParams);
+				if(routeParams != null && !routeParams.isEmpty()) {
+					for(Map.Entry<String, String> item : routeParams.entrySet()) {
+						httpRequestWithBody.routeParam(item.getKey(), item.getValue());
+					}
+				}
+				return httpRequestWithBody;
+			}
+			case PUT: {
+				HttpRequestWithBody httpRequestWithBody = Unirest.put(this.getBaseURL() + url)
+						.headers(headers)
+						.queryString(queryParams);
+				if(routeParams != null && !routeParams.isEmpty()) {
+					for(Map.Entry<String, String> item : routeParams.entrySet()) {
+						httpRequestWithBody.routeParam(item.getKey(), item.getValue());
+					}
+				}
+				return httpRequestWithBody;
+			}
+			case DELETE: {
+				HttpRequestWithBody httpRequestWithBody = Unirest.delete(this.getBaseURL() + url)
+						.headers(headers)
+						.queryString(queryParams);
+				if(routeParams != null && !routeParams.isEmpty()) {
+					for(Map.Entry<String, String> item : routeParams.entrySet()) {
+						httpRequestWithBody.routeParam(item.getKey(), item.getValue());
+					}
+				}
+				return httpRequestWithBody;
+			}
+			default: {
+				break;
+			}
+		}
+		throw new Exception("Unmapped HTTP Method for prepareHttpRequestWithBody");
+	}
+
+	@Override
+	public <T> IResultProcessor zPost(String url, T payload) throws Exception {
+		return zPost(url, null, null, payload);
+	}
+
+	@Override
+	public <T> IResultProcessor zPost(String url, Map<String, String> routeParams, T payload) throws Exception {
+		return zPost(url, routeParams, null, payload);
+	}
+
+	@Override
+	public <T> IResultProcessor zPost(String url, Map<String, String> routeParams, Map<String, Object> queryParams, T payload) throws Exception {
+		return new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.POST,
+				url,
+				routeParams,
+				queryParams).body(this.objectMapper.writeValueAsString(payload)).asStringAsync());
+	}
+
+	@Override
+	public <T> IResultProcessor zPost(String url, List<T> payloads) throws Exception {
+		return zPost(url, null, null, payloads);
+	}
+
+	@Override
+	public <T> IResultProcessor zPost(String url, Map<String, String> routeParams, List<T> payloads) throws Exception {
+		return zPost(url, routeParams, null, payloads);
+	}
+
+	@Override
+	public <T> IResultProcessor zPost(String url, Map<String, String> routeParams, Map<String, Object> queryParams, List<T> payloads) throws Exception {
+		return new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.POST,
+				url,
+				routeParams,
+				queryParams).body(this.objectMapper.writeValueAsString(payloads)).asStringAsync());
+	}
+
+	@Override
+	public <T> IResultProcessor zPut(String url, Map<String, String> routeParams, Map<String, Object> queryParams, T payload) throws Exception {
+		return new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.PUT,
+				url,
+				routeParams,
+				queryParams).body(this.objectMapper.writeValueAsString(payload)).asStringAsync());
+	}
+
+	@Override
+	public <T> IResultProcessor zPut(String url, Map<String, String> routeParams, Map<String, Object> queryParams, List<T> payloads) throws Exception {
+		return new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.PUT,
+				url,
+				routeParams,
+				queryParams).body(this.objectMapper.writeValueAsString(payloads)).asStringAsync());
+	}
+
+	@Override
+	public <T> IResultProcessor zUpsert(String url, Map<String, String> routeParams, Map<String, Object> queryParams, T payload) throws Exception {
+		return zPost(url, routeParams, queryParams, payload);
+	}
+
+	@Override
+	public <T> IResultProcessor zUpsert(String url, Map<String, String> routeParams, Map<String, Object> queryParams, List<T> payloads) throws Exception {
+		return zPost(url, routeParams, queryParams, payloads);
+	}
+
+	@Override
+	public void zDelete(String url, Map<String, String> routeParams, Map<String, Object> queryParams) throws Exception {
+		new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.DELETE,
+				url,
+				routeParams,
+				queryParams).asStringAsync()).parse();
+	}
+
+	@Override
+	public IResultProcessor zGet(String url) throws Exception {
+		return new ResultProcessor(prepareHttpRequest(HttpMethod.GET,
+				url,
+				null,
+				null).asStringAsync());
+	}
+
+	@Override
+	public IResultProcessor zGet(String url, Map<String, String> routeParams, Map<String, Object> queryParams) throws Exception {
+		return new ResultProcessor(prepareHttpRequest(HttpMethod.GET,
+				url,
+				routeParams,
+				queryParams).asStringAsync());
+	}
 
 	//region TRANSACTION
 
 	//region INSERT
 
 	@Override
-	public <T> T zinsert(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
+	public <T> T zinsert(String eid, T item, Type typeOfT) throws Exception
 	{
 		List<T> payload = new ArrayList<>();
 		payload.add(item);
 
-		List<T> result = zinsert(eid, urlParameters, payload, typeOfT);
+		List<T> result = zinsert(eid, payload, typeOfT);
 		if (result != null && !result.isEmpty())
 		{
 			return result.get(0);
@@ -141,12 +264,12 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	}
 
 	@Override
-	public <T> Map<String, Object> zinsert(String eid, Map<String, Object> urlParameters, T item) throws Exception
+	public <T> Map<String, Object> zinsert(String eid, T item) throws Exception
 	{
 		List<T> payload = new ArrayList<>();
 		payload.add(item);
 
-		List<Map<String, Object>> result = zinsert(eid, urlParameters, payload);
+		List<Map<String, Object>> result = zinsert(eid, payload);
 		if (result != null && !result.isEmpty())
 		{
 			return result.get(0);
@@ -155,33 +278,19 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	}
 
 	@Override
-	public <T> List<T> zinsert(String eid, Map<String, Object> urlParameters, List<T> item, Type typeOfT) throws Exception
+	public <T> List<T> zinsert(String eid, List<T> item, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zinsert")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.body(objectMapper.writeValueAsString(item))
-				.asStringAsync();
-		return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zPost("/zinsert/{eid}", routeParams, item).parseToList(typeOfT);
 	}
 
 	@Override
-	public <T> List<Map<String, Object>> zinsert(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception
+	public <T> List<Map<String, Object>> zinsert(String eid, List<T> item) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zinsert")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.body(objectMapper.writeValueAsString(item))
-				.asStringAsync();
-		return parseToListMap(httpResponse);
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zPost("/zinsert/{eid}", routeParams, item).parseToListMap();
 	}
 
 	//endregion
@@ -189,16 +298,38 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	//region UPDATE
 
 	@Override
-	public <T> T zupdate(String eid, Map<String, Object> urlParameters, T item, Type typeOfT) throws Exception
+	public <T> T zupdate(String eid, Map<String, Object> queryParams, T item, Type typeOfT) throws Exception
 	{
-		if (urlParameters != null)
+		if (queryParams != null)
 		{
-			if (urlParameters.containsKey("_kb") && ((boolean) urlParameters.getOrDefault("_kb", false)))
+			if (queryParams.containsKey("_kb") && ((boolean) queryParams.getOrDefault("_kb", false)))
 			{
 				List<T> payload = new ArrayList<>();
 				payload.add(item);
 
-				List<T> result = zupdate(eid, urlParameters, payload, typeOfT);
+				List<T> result = zupdate(eid, queryParams, payload, typeOfT);
+				if (result != null && !result.isEmpty())
+				{
+					return result.get(0);
+				}
+			}
+		}
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zPut("/zupdate/{eid}", routeParams, queryParams, item).parse(typeOfT);
+	}
+
+	@Override
+	public <T> Map<String, Object> zupdate(String eid, Map<String, Object> queryParams, T item) throws Exception
+	{
+		if (queryParams != null)
+		{
+			if (queryParams.containsKey("_kb") && ((boolean) queryParams.getOrDefault("_kb", false)))
+			{
+				List<T> payload = new ArrayList<>();
+				payload.add(item);
+
+				List<Map<String, Object>> result = zupdate(eid, queryParams, payload);
 				if (result != null && !result.isEmpty())
 				{
 					return result.get(0);
@@ -206,144 +337,25 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 			}
 		}
 
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parse(httpResponse, typeOfT);
-		}
-		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parse(httpResponse, typeOfT);
-		}
-		else
-		{
-			throw new Exception("Invalid HTTP METHOD Mapping");
-		}
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zPut("/zupdate/{eid}", routeParams, queryParams, item).parseToMap();
 	}
 
 	@Override
-	public <T> Map<String, Object> zupdate(String eid, Map<String, Object> urlParameters, T item) throws Exception
+	public <T> List<T> zupdate(String eid, Map<String, Object> queryParams, List<T> item, Type typeOfT) throws Exception
 	{
-		if (urlParameters != null)
-		{
-			if (urlParameters.containsKey("_kb") && ((boolean) urlParameters.getOrDefault("_kb", false)))
-			{
-				List<T> payload = new ArrayList<>();
-				payload.add(item);
-
-				List<Map<String, Object>> result = zupdate(eid, urlParameters, payload);
-				if (result != null && !result.isEmpty())
-				{
-					return result.get(0);
-				}
-			}
-		}
-
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parseToMap(httpResponse);
-		}
-		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parseToMap(httpResponse);
-		}
-		else
-		{
-			throw new Exception("Invalid HTTP METHOD Mapping");
-		}
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zPut("/zupdate/{eid}", routeParams, queryParams, item).parseToList(typeOfT);
 	}
 
 	@Override
-	public <T> List<T> zupdate(String eid, Map<String, Object> urlParameters, List<T> item, Type typeOfT) throws Exception
+	public <T> List<Map<String, Object>> zupdate(String eid, Map<String, Object> queryParams, List<T> item) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		}
-		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		}
-		else
-		{
-			throw new Exception("Invalid HTTP METHOD Mapping");
-		}
-	}
-
-	@Override
-	public <T> List<Map<String, Object>> zupdate(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception
-	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("put"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.put(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parseToListMap(httpResponse);
-		}
-		else if (this.httpMethodMapping.get(HTTP_METHOD_PUT).equals("post"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.post(getBaseUrl() + "zupdate")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.body(objectMapper.writeValueAsString(item))
-					.asStringAsync();
-			return parseToListMap(httpResponse);
-		}
-		else
-		{
-			throw new Exception("Invalid HTTP METHOD Mapping");
-		}
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zPut("/zupdate/{eid}", routeParams, queryParams, item).parseToListMap();
 	}
 
 	//endregion
@@ -351,63 +363,11 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	//region DELETE
 
 	@Override
-	public <T> List<T> zdelete(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
+	public void zdelete(String eid, Map<String, Object> queryParams) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("delete"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.delete(getBaseUrl() + "zdelete")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.asStringAsync();
-			return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		}
-		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zdelete")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.asStringAsync();
-			return parseToList(httpResponse, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		}
-		else
-		{
-			throw new Exception("Invalid HTTP METHOD Mapping");
-		}
-	}
-
-	@Override
-	public List<Map<String, Object>> zdelete(String eid, Map<String, Object> urlParameters) throws Exception
-	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("delete"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.delete(getBaseUrl() + "zdelete")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.asStringAsync();
-			return parseToListMap(httpResponse);
-		}
-		else if (this.httpMethodMapping.get(HTTP_METHOD_DELETE).equals("get"))
-		{
-			Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zdelete")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.asStringAsync();
-			return parseToListMap(httpResponse);
-		}
-		else
-		{
-			throw new Exception("Invalid HTTP METHOD Mapping");
-		}
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		zDelete("/zdelete/{eid}", routeParams, queryParams);
 	}
 
 	//endregion
@@ -419,45 +379,27 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	//region GET SINGLE
 
 	@Override
-	public Map<String, Object> zgetSingle(String eid, Map<String, Object> urlParameters) throws Exception
+	public Map<String, Object> zgetOne(String eid, Map<String, Object> queryParams) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-		return parseToMap(httpResponse);
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}",routeParams, queryParams).parseToMap();
 	}
 
 	@Override
-	public <T> T zgetSingle(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
+	public <T> T zgetOne(String eid, Map<String, Object> queryParams, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-		return parse(httpResponse, typeOfT);
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}",routeParams, queryParams).parse(typeOfT);
 	}
 
 	@Override
-	public <T> T zgetSingle(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception
+	public <T> T zgetOne(String eid, Map<String, Object> queryParams, IObjectAssembler objectAssembler) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		Future<HttpResponse<String>> httpResponse = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync();
-		return parse(httpResponse, objectAssembler);
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}",routeParams, queryParams).parse(objectAssembler);
 	}
 
 	//endregion
@@ -465,79 +407,43 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	//region GET LIST
 
 	@Override
-	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters) throws Exception
+	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> queryParams) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		return parseToListMap(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync());
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams).parseToListMap();
 	}
 
 	@Override
-	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation) throws Exception
+	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> queryParams, Pagination pagination) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		return parseToListMap(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync(), pagingInformation);
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams).parseToListMap(pagination);
 	}
 
 	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Type typeOfT) throws Exception
+	public <T> List<T> zgetList(String eid, Map<String, Object> queryParams, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		return parseToList(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync(), TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams).parseToList(typeOfT);
 	}
 
 	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, IObjectAssembler objectAssembler) throws Exception
+	public <T> List<T> zgetList(String eid, Map<String, Object> queryParams, Pagination pagination, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		return parseToList(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync(), objectAssembler);
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams).parseToList(typeOfT, pagination);
 	}
 
 	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, Type typeOfT) throws Exception
+	public <T> List<T> zgetList(String eid, Map<String, Object> queryParams, IObjectAssembler objectAssembler) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		if (pagingInformation == null)
-		{
-			return parseToList(Unirest.get(getBaseUrl() + "zget")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.asStringAsync(), TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		}
-		else
-		{
-			return parseToList(Unirest.get(getBaseUrl() + "zget")
-					.headers(headers)
-					.queryString("eid", eid)
-					.queryString(urlParameters)
-					.asStringAsync(), pagingInformation, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		}
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams).parseToList(objectAssembler);
 	}
 
 	@Override
@@ -558,9 +464,9 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 	}
 
 	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation, Type typeOfT) throws Exception
+	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, Pagination pagination, Type typeOfT) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
+		/*Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
@@ -572,20 +478,21 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
 		}
 
-		if (pagingInformation == null)
+		if (pagination == null)
 		{
 			return parseToList(request.asStringAsync(), TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
 		}
 		else
 		{
-			return parseToList(request.asStringAsync(), pagingInformation, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		}
+			return parseToList(request.asStringAsync(), pagination, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
+		}*/
+		return null;
 	}
 
 	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception
+	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Pagination pagination, IObjectAssembler objectAssembler) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
+		/*Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
@@ -593,20 +500,21 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				.queryString("eid", eid)
 				.queryString(urlParameters);
 
-		if (pagingInformation == null)
+		if (pagination == null)
 		{
 			return parseToList(request.asStringAsync(), objectAssembler);
 		}
 		else
 		{
-			return parseToList(request.asStringAsync(), pagingInformation, objectAssembler);
-		}
+			return parseToList(request.asStringAsync(), pagination, objectAssembler);
+		}*/
+		return null;
 	}
 
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, IObjectAssembler objectAssembler) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
+		/*Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
@@ -617,13 +525,14 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		{
 			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
 		}
-		return parseToList(request.asStringAsync(), objectAssembler);
+		return parseToList(request.asStringAsync(), objectAssembler);*/
+		return null;
 	}
 
 	@Override
 	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
+		/*Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
@@ -639,12 +548,14 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 				.queryString("eid", eid)
 				.queryString(urlParameters)
 				.asStringAsync());
+				*/
+		return null;
 	}
 
 	@Override
-	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, PagingInformation pagingInformation) throws Exception
+	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, Pagination pagination) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
+		/*Map<String, String> headers = apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
 		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
@@ -656,14 +567,15 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
 		}
 
-		if (pagingInformation == null)
+		if (pagination == null)
 		{
 			return parseToListMap(request.asStringAsync());
 		}
 		else
 		{
-			return parseToListMap(request.asStringAsync(), pagingInformation);
-		}
+			return parseToListMap(request.asStringAsync(), pagination);
+		}*/
+		return null;
 	}
 
 	//endregion
@@ -769,607 +681,21 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 
 	//endregion
 
-	//region RESULT PROCESSOR
+	//region GETTER/SETTER
 
-	//region PARSE OBJECT
-
-	@Override
-	public <T> T parse(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
+	public String getBaseURL()
 	{
-		Gson gson = getGsonWithSerializerDeserializer();
-
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
+		/*if (baseURL != null)
 		{
-			return null;
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			throw new Exception("Cannot convert JSON Primitive to Object of T");
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			throw new Exception("Cannot convert JSON Array to Object of T");
-		}
-
-		if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				return null;
-			}
-
-			if (root.has("data"))
-			{
-				JsonObject data = root.getAsJsonObject("data");
-				return gson.fromJson(data, typeOfT);
-			}
-			else
-			{
-				return gson.fromJson(root, typeOfT);
-			}
-		}
-		return null;
+			if (!baseURL.endsWith("/"))
+				return baseURL + "/";
+		}*/
+		return baseURL;
 	}
 
-	@Override
-	public <T> T parse(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception
+	public void setBaseURL(String baseUrl)
 	{
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			return null;
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			throw new Exception("Cannot convert JSON Primitive to Object of T");
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			throw new Exception("Cannot convert JSON Array to Object of T");
-		}
-
-		if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				return null;
-			}
-
-			if (root.has("data"))
-			{
-				JsonObject data = root.getAsJsonObject("data");
-				return objectAssembler.assemble(data);
-			}
-			else
-			{
-				return objectAssembler.assemble(root);
-			}
-		}
-		return null;
-	}
-
-	@Override
-	public Map<String, Object> parseToMap(Future<HttpResponse<String>> httpResponse) throws Exception
-	{
-		Gson gson = getGsonWithSerializerDeserializer();
-
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			return null;
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			throw new Exception("Cannot convert JSON Primitive to Map<String, Object>");
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			throw new Exception("Cannot convert JSON Array to Map<String, Object>");
-		}
-
-		if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				return null;
-			}
-
-			if (root.has("data"))
-			{
-				JsonObject data = root.getAsJsonObject("data");
-				return gson.fromJson(data, new TypeToken<Map<String, Object>>()
-				{
-				}.getType());
-			}
-			else
-			{
-				return gson.fromJson(root, new TypeToken<Map<String, Object>>()
-				{
-				}.getType());
-			}
-		}
-		return null;
-	}
-
-	//endregion
-
-	//region PARSE TO LIST
-
-	@Override
-	public <T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, Type typeOfT) throws Exception
-	{
-		Gson gson = getGsonWithSerializerDeserializer();
-
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			return new ArrayList<>();
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			throw new Exception("Cannot convert JSON Primitive to List<T>");
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			JsonArray root = rootJsonElement.getAsJsonArray();
-			return gson.fromJson(root, typeOfT);
-		}
-		else if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				return new ArrayList<>();
-			}
-
-			if (root.has("data"))
-			{
-				if(root.get("data").isJsonArray())
-				{
-					JsonArray data = root.getAsJsonArray("data");
-					return gson.fromJson(data, typeOfT);
-				}
-			}
-		}
-		return new ArrayList<>();
-	}
-
-	@Override
-	public <T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, IObjectAssembler objectAssembler) throws Exception
-	{
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			return new ArrayList<>();
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			throw new Exception("Cannot convert JSON Primitive to List<T>");
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			JsonArray data = rootJsonElement.getAsJsonArray();
-			List<T> tmpList = new ArrayList<>();
-			while (data.iterator().hasNext())
-			{
-				tmpList.add(objectAssembler.assemble(data.iterator().next()));
-			}
-			return tmpList;
-		}
-		else if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				return new ArrayList<>();
-			}
-
-			if (root.has("data"))
-			{
-				if(root.get("data").isJsonArray())
-				{
-					JsonArray data = root.getAsJsonArray("data");
-					List<T> tmpList = new ArrayList<>();
-					while (data.iterator().hasNext())
-					{
-						tmpList.add(objectAssembler.assemble(data.iterator().next()));
-					}
-					return tmpList;
-				}
-			}
-		}
-		return new ArrayList<>();
-	}
-
-	@Override
-	public <T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, Type typeOfT) throws Exception
-	{
-		Gson gson = getGsonWithSerializerDeserializer();
-
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			pagingInformation.setTotal(0);
-			return new ArrayList<>();
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			throw new Exception("Cannot convert JSON Primitive to List<T>");
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			JsonArray root = rootJsonElement.getAsJsonArray();
-			if (root != null && !root.isJsonNull())
-			{
-				pagingInformation.setTotal(root.size());
-				return gson.fromJson(root, typeOfT);
-			}
-		}
-		else if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				pagingInformation.setTotal(0);
-				return new ArrayList<>();
-			}
-
-			if (root.has("data"))
-			{
-				if(root.get("data").isJsonArray())
-				{
-					JsonArray data = root.getAsJsonArray("data");
-					pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
-					return gson.fromJson(data, typeOfT);
-				}
-			}
-		}
-		return new ArrayList<>();
-	}
-
-	@Override
-	public <T> List<T> parseToList(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation, IObjectAssembler objectAssembler) throws Exception
-	{
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			pagingInformation.setTotal(0);
-			return new ArrayList<>();
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			throw new Exception("Cannot convert JSON Primitive to List<T>");
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			JsonArray data = rootJsonElement.getAsJsonArray();
-			List<T> tmpList = new ArrayList<>();
-			while (data.iterator().hasNext())
-			{
-				tmpList.add(objectAssembler.assemble(data.iterator().next()));
-			}
-			pagingInformation.setTotal(tmpList.size());
-			return tmpList;
-		}
-		else if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				pagingInformation.setTotal(0);
-				return new ArrayList<>();
-			}
-
-			if (root.has("data"))
-			{
-				if(root.get("data").isJsonArray())
-				{
-					JsonArray data = root.getAsJsonArray("data");
-					pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
-					List<T> tmpList = new ArrayList<>();
-					while (data.iterator().hasNext())
-					{
-						tmpList.add(objectAssembler.assemble(data.iterator().next()));
-					}
-					return tmpList;
-				}
-			}
-		}
-		pagingInformation.setTotal(0);
-		return new ArrayList<>();
-	}
-
-	@Override
-	public List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse) throws Exception
-	{
-		Gson gson = getGsonWithSerializerDeserializer();
-
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			return new ArrayList<>();
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			throw new Exception("Cannot convert JSON Primitive to List<Map<String, Object>>");
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			JsonArray data = rootJsonElement.getAsJsonArray();
-			return gson.fromJson(data, new TypeToken<List<Map<String, Object>>>()
-			{
-			}.getType());
-		}
-		else if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				return new ArrayList<>();
-			}
-
-			if (root.has("data"))
-			{
-				if(root.get("data").isJsonArray())
-				{
-					JsonArray data = root.getAsJsonArray("data");
-					return gson.fromJson(data, new TypeToken<List<Map<String, Object>>>()
-					{
-					}.getType());
-				}
-			}
-		}
-		return new ArrayList<>();
-	}
-
-	@Override
-	public List<Map<String, Object>> parseToListMap(Future<HttpResponse<String>> httpResponse, PagingInformation pagingInformation) throws Exception
-	{
-		Gson gson = getGsonWithSerializerDeserializer();
-
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			pagingInformation.setTotal(0);
-			return new ArrayList<>();
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			throw new Exception("Cannot convert JSON Primitive to List<T>");
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			JsonArray root = rootJsonElement.getAsJsonArray();
-			if (root != null && !root.isJsonNull())
-			{
-				pagingInformation.setTotal(root.size());
-				return gson.fromJson(root, new TypeToken<List<Map<String, Object>>>()
-				{
-				}.getType());
-			}
-		}
-		else if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				pagingInformation.setTotal(0);
-				return new ArrayList<>();
-			}
-
-			if (root.has("data"))
-			{
-				if(root.get("data").isJsonArray())
-				{
-					JsonArray data = root.getAsJsonArray("data");
-					pagingInformation.setTotal(root.getAsJsonPrimitive("total").getAsInt());
-					return gson.fromJson(data, new TypeToken<List<Map<String, Object>>>()
-					{
-					}.getType());
-				}
-			}
-		}
-		pagingInformation.setTotal(0);
-		return new ArrayList<>();
-	}
-
-	//endregion
-
-	//region JSON AND PRIMITIVE
-
-	@Override
-	public String parseToJSONString(Future<HttpResponse<String>> httpResponse) throws Exception
-	{
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			return null;
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			return rootJsonElement.getAsJsonArray().toString();
-		}
-		else if (rootJsonElement.isJsonObject())
-		{
-			return rootJsonElement.getAsJsonObject().toString();
-		}
-		else if (rootJsonElement.isJsonPrimitive())
-		{
-			return rootJsonElement.getAsJsonPrimitive().toString();
-		}
-		return null;
-	}
-
-	@Override
-	public JsonPrimitive parseToJsonPrimitive(Future<HttpResponse<String>> httpResponse) throws Exception
-	{
-		JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
-		if (rootJsonElement == null || rootJsonElement.isJsonNull())
-		{
-			return null;
-		}
-
-		if (rootJsonElement.isJsonArray())
-		{
-			throw new Exception("Cannot convert JSON Array to JsonPrimitive");
-		}
-
-		if (rootJsonElement.isJsonPrimitive())
-		{
-			return rootJsonElement.getAsJsonPrimitive();
-		}
-		else if (rootJsonElement.isJsonObject())
-		{
-			bubbleAnyDbFlareErrorMessages(rootJsonElement);
-			JsonObject root = rootJsonElement.getAsJsonObject();
-			if (root == null || root.isJsonNull())
-			{
-				return null;
-			}
-
-			if (root.has("data"))
-			{
-				return root.getAsJsonObject("data").getAsJsonPrimitive();
-			}
-		}
-		return null;
-	}
-
-	//endregion
-
-	//endregion
-
-	private Gson getGsonWithSerializerDeserializer()
-	{
-		GsonBuilder gsonBuilder = new GsonBuilder().disableHtmlEscaping();
-		gsonBuilder.registerTypeAdapter(Date.class, new JsonDeserializer<Date>()
-		{
-			public Date deserialize(JsonElement json, Type type, JsonDeserializationContext context) throws JsonParseException
-			{
-				String dateString = json.getAsString();
-				DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSZ");
-				try
-				{
-					if (StringUtils.isBlank(dateString))
-					{
-						return null;
-					}
-					else
-					{
-						return df.parse(dateString);
-					}
-				}
-				catch (ParseException parseException)
-				{
-					System.out.println(parseException.getMessage());
-					return null;
-				}
-			}
-		}).registerTypeHierarchyAdapter(byte[].class, new ByteArrayToBase64TypeAdapter());
-		return gsonBuilder.create();
-	}
-
-	private JsonElement getRootElement(HttpResponse<String> response) throws Exception
-	{
-		if (response == null)
-		{
-			throw new NullPointerException("response is null");
-		}
-
-		if (response.getStatus() >= 200 && response.getStatus() <= 299)
-		{
-			Gson gson = getGsonWithSerializerDeserializer();
-			return gson.fromJson(response.getBody(), JsonElement.class);
-		}
-		else if(response.getStatus() == 401)
-		{
-			throw new Exception("Unauthorized");
-		}
-		StringBuilder sb = new StringBuilder("Invalid HTTP Response Code\n");
-		sb.append(response.getStatusText());
-		sb.append(response.getBody());
-		throw new Exception(sb.toString());
-	}
-
-	private void bubbleAnyDbFlareErrorMessages(JsonElement rootElement) throws Exception
-	{
-		if (rootElement != null)
-		{
-			if (!rootElement.isJsonNull() && rootElement.isJsonObject())
-			{
-				JsonObject root = rootElement.getAsJsonObject();
-				if (root.has("errors"))
-				{
-					JsonArray errors = root.getAsJsonArray("errors");
-					while (errors.iterator().hasNext())
-					{
-						JsonElement e = errors.iterator().next();
-						throw new Exception(e.getAsString());
-					}
-				}
-			}
-		}
-	}
-
-	//CODE FROM or BASED: https://gist.github.com/orip/3635246
-	private static class ByteArrayToBase64TypeAdapter implements JsonSerializer<byte[]>, JsonDeserializer<byte[]>
-	{
-		public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
-		{
-			return Base64.getDecoder().decode(json.getAsString());
-		}
-
-		public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context)
-		{
-			return new JsonPrimitive(Base64.getEncoder().encodeToString(src));
-		}
-	}
-
-	public String getBaseUrl()
-	{
-		if (baseUrl != null)
-		{
-			if (!baseUrl.endsWith("/"))
-				return baseUrl + "/";
-		}
-		return baseUrl;
-	}
-
-	public void setBaseUrl(String baseUrl)
-	{
-		this.baseUrl = baseUrl;
+		this.baseURL = baseUrl;
 	}
 
 	public boolean isKeyRequired()
@@ -1414,4 +740,6 @@ public class DbFlareClient implements IDbFlareClient, IResultProcessor
 		}
 		return headers;
 	}
+
+	//endregion
 }
