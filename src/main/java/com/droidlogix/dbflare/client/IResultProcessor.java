@@ -26,6 +26,8 @@ public interface IResultProcessor
 
 	<T> List<T> parseToList(IObjectAssembler objectAssembler) throws Exception;
 
+	<T> List<T> parseToList(IObjectAssembler objectAssembler, Pagination pagination) throws Exception;
+
 	List<Map<String, Object>> parseToListMap() throws Exception;
 
 	List<Map<String, Object>> parseToListMap(Pagination pagination) throws Exception;

@@ -91,7 +91,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	//endregion
 
-	private HttpRequest prepareHttpRequest(HttpMethod httpMethod, String url, Map<String, String> routeParams, Map<String, Object> queryParams, Map<String, Collection> queryParamsCollection) throws Exception {
+	private HttpRequest prepareHttpRequest(HttpMethod httpMethod, String url, Map<String, String> routeParams, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection) throws Exception {
 		Map<String, String> headers = this.apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
@@ -107,11 +107,11 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 				}
 
 				if(queryParamsCollection != null && !queryParamsCollection.isEmpty()) {
-					for(Map.Entry<String, String> item : routeParams.entrySet()) {
-						httpRequest.routeParam(item.getKey(), item.getValue());
+					for (Map.Entry<String, Collection<?>> item : queryParamsCollection.entrySet())
+					{
+						httpRequest.queryString(item.getKey(), queryParamsCollection.get(item.getKey()));
 					}
 				}
-
 				return httpRequest;
 			}
 			default: {
@@ -241,6 +241,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 		return new ResultProcessor(prepareHttpRequest(HttpMethod.GET,
 				url,
 				null,
+				null,
 				null).asStringAsync());
 	}
 
@@ -249,11 +250,12 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 		return new ResultProcessor(prepareHttpRequest(HttpMethod.GET,
 				url,
 				routeParams,
-				queryParams).asStringAsync());
+				queryParams,
+				null).asStringAsync());
 	}
 
 	@Override
-	public IResultProcessor zGet(String url, Map<String, String> routeParams, Map<String, Object> queryParams, Map<String, Collection> queryParamsCollection) throws Exception {
+	public IResultProcessor zGet(String url, Map<String, String> routeParams, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection) throws Exception {
 		return new ResultProcessor(prepareHttpRequest(HttpMethod.GET,
 				url,
 				routeParams,
@@ -463,136 +465,51 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 	}
 
 	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Map<String, Collection<?>> urlParameters2, Type typeOfT) throws Exception
+	public <T> List<T> zgetList(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection, Type typeOfT) throws Exception
 	{
-		/*Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters);
-		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
-		{
-			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
-		}
-		return parseToList(request.asStringAsync(), TypeToken.getParameterized(ArrayList.class, typeOfT).getType());*/
-		return null;
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, queryParamsCollection).parseToList(typeOfT);
 	}
 
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection, Pagination pagination, Type typeOfT) throws Exception
 	{
-		/*Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters);
-		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
-		{
-			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
-		}
-
-		if (pagination == null)
-		{
-			return parseToList(request.asStringAsync(), TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		}
-		else
-		{
-			return parseToList(request.asStringAsync(), pagination, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
-		}*/
-		return null;
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, queryParamsCollection).parseToList(typeOfT, pagination);
 	}
 
 	@Override
-	public <T> List<T> zgetList(String eid, Map<String, Object> urlParameters, Pagination pagination, IObjectAssembler objectAssembler) throws Exception
+	public <T> List<T> zgetList(String eid, Map<String, Object> queryParams, Pagination pagination, IObjectAssembler objectAssembler) throws Exception
 	{
-		/*Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters);
-
-		if (pagination == null)
-		{
-			return parseToList(request.asStringAsync(), objectAssembler);
-		}
-		else
-		{
-			return parseToList(request.asStringAsync(), pagination, objectAssembler);
-		}*/
-		return null;
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, null).parseToList(objectAssembler, pagination);
 	}
 
 	@Override
 	public <T> List<T> zgetList(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection, IObjectAssembler objectAssembler) throws Exception
 	{
-		/*Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters);
-		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
-		{
-			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
-		}
-		return parseToList(request.asStringAsync(), objectAssembler);*/
-		return null;
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, queryParamsCollection).parseToList(objectAssembler);
 	}
 
 	@Override
 	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection) throws Exception
 	{
-		/*Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters);
-		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
-		{
-			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
-		}
-		return parseToListMap(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters)
-				.asStringAsync());
-				*/
-		return null;
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, queryParamsCollection).parseToListMap();
 	}
 
 	@Override
 	public List<Map<String, Object>> zgetList(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection, Pagination pagination) throws Exception
 	{
-		/*Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		HttpRequest request = Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(urlParameters);
-		for (Map.Entry<String, Collection<?>> item : urlParameters2.entrySet())
-		{
-			request.queryString(item.getKey(), urlParameters2.get(item.getKey()));
-		}
-
-		if (pagination == null)
-		{
-			return parseToListMap(request.asStringAsync());
-		}
-		else
-		{
-			return parseToListMap(request.asStringAsync(), pagination);
-		}*/
-		return null;
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, queryParamsCollection).parseToListMap(pagination);
 	}
 
 	//endregion
@@ -610,81 +527,46 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 	{
 		Map<String, String> routeParams = new HashMap<>();
 		routeParams.put("eid", eid);
-
-		for (Map.Entry<String, Collection<?>> item : queryParamsCollection.entrySet())
-		{
-			request.queryString(item.getKey(), queryParamsCollection.get(item.getKey()));
-		}
-
-		return zGet("/zget/{eid}", routeParams, queryParams).parseToJSONString();
+		return zGet("/zget/{eid}", routeParams, queryParams, queryParamsCollection).parseToJSONString();
 	}
 
 	@Override
 	public String zgetString(String eid, Map<String, Object> queryParams) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		JsonPrimitive jsonPrimitive = parseToJsonPrimitive(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(queryParams)
-				.asStringAsync());
-		return jsonPrimitive.getAsString();
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, null).parseToJsonPrimitive().getAsString();
 	}
 
 	@Override
 	public long zgetInteger(String eid, Map<String, Object> queryParams) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		JsonPrimitive jsonPrimitive = parseToJsonPrimitive(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(queryParams)
-				.asStringAsync());
-		return jsonPrimitive.getAsInt();
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, null).parseToJsonPrimitive().getAsInt();
 	}
 
 	@Override
 	public long zgetLong(String eid, Map<String, Object> queryParams) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		JsonPrimitive jsonPrimitive = parseToJsonPrimitive(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(queryParams)
-				.asStringAsync());
-		return jsonPrimitive.getAsLong();
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, null).parseToJsonPrimitive().getAsLong();
 	}
 
 	@Override
 	public double zgetDouble(String eid, Map<String, Object> queryParams) throws Exception
 	{
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		JsonPrimitive jsonPrimitive = parseToJsonPrimitive(Unirest.get(getBaseUrl() + "zget")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(queryParams)
-				.asStringAsync());
-		return jsonPrimitive.getAsDouble();
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, null).parseToJsonPrimitive().getAsDouble();
 	}
 
 	@Override
 	public String zexecuteJSON(String eid, Map<String, Object> queryParams) throws Exception {
-		Map<String, String> headers = apiKeyCheckpoint();
-		headers.put("accept", "application/json;charset=UTF-8");
-
-		return parseToJSONString(Unirest.post(getBaseUrl() + "zexecute")
-				.headers(headers)
-				.queryString("eid", eid)
-				.queryString(queryParams)
-				.asStringAsync());
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}", routeParams, queryParams, null).parseToJSONString();
 	}
 
 
