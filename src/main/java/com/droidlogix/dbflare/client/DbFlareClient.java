@@ -2,17 +2,13 @@ package com.droidlogix.dbflare.client;
 
 import com.droidlogix.dbflare.client.models.Pagination;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
 import com.mashape.unirest.http.HttpMethod;
-import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.HttpRequest;
 import com.mashape.unirest.request.HttpRequestWithBody;
 
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.Future;
 
 /**
  * @author John Pili
