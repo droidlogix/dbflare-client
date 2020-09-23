@@ -5,7 +5,7 @@ import com.droidlogix.dbflare.client.models.Pagination;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import com.mashape.unirest.http.HttpResponse;
+import kong.unirest.HttpResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

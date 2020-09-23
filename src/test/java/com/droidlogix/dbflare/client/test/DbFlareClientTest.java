@@ -1,12 +1,11 @@
 package com.droidlogix.dbflare.client.test;
 
 import com.droidlogix.dbflare.client.DbFlareClient;
-import com.droidlogix.dbflare.client.test.models.Jobsheet;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.gson.GsonBuilder;
-import com.mashape.unirest.http.Unirest;
+import kong.unirest.Unirest;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
@@ -47,11 +46,12 @@ public class DbFlareClientTest {
         logger.info(() ->"WebConfig::getDbFlareClient");
         try
         {
-            CloseableHttpAsyncClient x = HttpAsyncClients.custom().setSSLContext(new SSLContextBuilder().loadTrustMaterial(null, (x509Certificates, s) -> true).build())
-                    .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
-                    .useSystemProperties()
-                    .build();
-            Unirest.setAsyncHttpClient(x);
+            //CloseableHttpAsyncClient x = HttpAsyncClients.custom().setSSLContext(new SSLContextBuilder().loadTrustMaterial(null, (x509Certificates, s) -> true).build())
+              //      .setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE)
+                //    .useSystemProperties()
+                  //  .build();
+
+            Unirest.config().verifySsl(false);
         }
         catch (Exception exception)
         {

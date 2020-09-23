@@ -3,12 +3,10 @@ package com.droidlogix.dbflare.client;
 import com.droidlogix.dbflare.client.models.Pagination;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.*;
-import com.mashape.unirest.http.HttpResponse;
 
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 public interface IResultProcessor
 {

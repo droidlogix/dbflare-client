@@ -2,7 +2,7 @@ package com.droidlogix.dbflare.client;
 
 import com.droidlogix.dbflare.client.models.Pagination;
 import com.google.gson.JsonElement;
-import com.mashape.unirest.http.HttpResponse;
+import kong.unirest.HttpResponse;
 
 import java.util.concurrent.Future;
 

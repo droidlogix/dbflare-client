@@ -2,13 +2,15 @@ package com.droidlogix.dbflare.client;
 
 import com.droidlogix.dbflare.client.models.Pagination;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mashape.unirest.http.HttpMethod;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.request.HttpRequest;
-import com.mashape.unirest.request.HttpRequestWithBody;
+import kong.unirest.HttpMethod;
+import kong.unirest.HttpRequest;
+import kong.unirest.HttpRequestWithBody;
+import kong.unirest.Unirest;
 
 import java.lang.reflect.Type;
 import java.util.*;
+
+import static kong.unirest.HttpMethod.*;
 
 /**
  * @author John Pili
@@ -91,8 +93,8 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 		Map<String, String> headers = this.apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		switch(httpMethod) {
-			case GET: {
+		switch(httpMethod.name()) {
+			case "GET": {
 				HttpRequest httpRequest = Unirest.get(this.getBaseURL() + url)
 						.headers(headers)
 						.queryString(queryParams);
@@ -121,8 +123,8 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 		Map<String, String> headers = this.apiKeyCheckpoint();
 		headers.put("accept", "application/json;charset=UTF-8");
 
-		switch(httpMethod) {
-			case POST: {
+		switch(httpMethod.name()) {
+			case "POST": {
 				HttpRequestWithBody httpRequestWithBody = Unirest.post(this.getBaseURL() + url)
 						.headers(headers)
 						.queryString(queryParams);
@@ -133,7 +135,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 				}
 				return httpRequestWithBody;
 			}
-			case PUT: {
+			case "PUT": {
 				HttpRequestWithBody httpRequestWithBody = Unirest.put(this.getBaseURL() + url)
 						.headers(headers)
 						.queryString(queryParams);
@@ -144,7 +146,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 				}
 				return httpRequestWithBody;
 			}
-			case DELETE: {
+			case "DELETE": {
 				HttpRequestWithBody httpRequestWithBody = Unirest.delete(this.getBaseURL() + url)
 						.headers(headers)
 						.queryString(queryParams);
@@ -174,7 +176,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	@Override
 	public <T> IResultProcessor zPost(String url, Map<String, String> routeParams, Map<String, Object> queryParams, T payload) throws Exception {
-		return new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.POST,
+		return new ResultProcessor(prepareHttpRequestWithBody(POST,
 				url,
 				routeParams,
 				queryParams).body(this.objectMapper.writeValueAsString(payload)).asStringAsync());
@@ -192,7 +194,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	@Override
 	public <T> IResultProcessor zPost(String url, Map<String, String> routeParams, Map<String, Object> queryParams, List<T> payloads) throws Exception {
-		return new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.POST,
+		return new ResultProcessor(prepareHttpRequestWithBody(POST,
 				url,
 				routeParams,
 				queryParams).body(this.objectMapper.writeValueAsString(payloads)).asStringAsync());
@@ -200,7 +202,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	@Override
 	public <T> IResultProcessor zPut(String url, Map<String, String> routeParams, Map<String, Object> queryParams, T payload) throws Exception {
-		return new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.PUT,
+		return new ResultProcessor(prepareHttpRequestWithBody(PUT,
 				url,
 				routeParams,
 				queryParams).body(this.objectMapper.writeValueAsString(payload)).asStringAsync());
@@ -208,7 +210,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	@Override
 	public <T> IResultProcessor zPut(String url, Map<String, String> routeParams, Map<String, Object> queryParams, List<T> payloads) throws Exception {
-		return new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.PUT,
+		return new ResultProcessor(prepareHttpRequestWithBody(PUT,
 				url,
 				routeParams,
 				queryParams).body(this.objectMapper.writeValueAsString(payloads)).asStringAsync());
@@ -226,7 +228,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	@Override
 	public void zDelete(String url, Map<String, String> routeParams, Map<String, Object> queryParams) throws Exception {
-		new ResultProcessor(prepareHttpRequestWithBody(HttpMethod.DELETE,
+		new ResultProcessor(prepareHttpRequestWithBody(DELETE,
 				url,
 				routeParams,
 				queryParams).asStringAsync()).parse();
@@ -234,7 +236,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	@Override
 	public IResultProcessor zGet(String url) throws Exception {
-		return new ResultProcessor(prepareHttpRequest(HttpMethod.GET,
+		return new ResultProcessor(prepareHttpRequest(GET,
 				url,
 				null,
 				null,
@@ -243,7 +245,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	@Override
 	public IResultProcessor zGet(String url, Map<String, String> routeParams, Map<String, Object> queryParams) throws Exception {
-		return new ResultProcessor(prepareHttpRequest(HttpMethod.GET,
+		return new ResultProcessor(prepareHttpRequest(GET,
 				url,
 				routeParams,
 				queryParams,
@@ -252,7 +254,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	@Override
 	public IResultProcessor zGet(String url, Map<String, String> routeParams, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection) throws Exception {
-		return new ResultProcessor(prepareHttpRequest(HttpMethod.GET,
+		return new ResultProcessor(prepareHttpRequest(GET,
 				url,
 				routeParams,
 				queryParams,
