@@ -564,7 +564,7 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 	public String zexecuteJSON(String eid, Map<String, Object> queryParams) throws Exception {
 		Map<String, String> routeParams = new HashMap<>();
 		routeParams.put("eid", eid);
-		return zGet("/zget/{eid}", routeParams, queryParams, null).parseToJSONString();
+		return zGet("/zexecute/{eid}", routeParams, queryParams, null).parseToJSONString();
 	}
 
 
