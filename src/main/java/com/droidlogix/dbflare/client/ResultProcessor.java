@@ -417,9 +417,11 @@ public class ResultProcessor implements IResultProcessor {
                     StringBuilder sb = new StringBuilder();
                     List<String> errors = new ArrayList<>();
                     for(int i = 0; i < jsonErrors.size(); i++) {
-                        sb.append(jsonErrors.get(i).getAsString());
-                        sb.append("\n");
-                        errors.add(jsonErrors.get(i).getAsString());
+                        if(!jsonErrors.get(i).isJsonNull()) {
+                            sb.append(jsonErrors.get(i).getAsString());
+                            sb.append("\n");
+                            errors.add(jsonErrors.get(i).getAsString());
+                        }
                     }
 
                     if(sb.length() > 0) {

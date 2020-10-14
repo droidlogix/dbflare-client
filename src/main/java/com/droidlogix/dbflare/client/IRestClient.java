@@ -22,9 +22,9 @@ public interface IRestClient {
 
     <T> IResultProcessor zPut(String url, Map<String, String> routeParams, Map<String, Object> queryParams, List<T> payloads) throws Exception;
 
-    <T> IResultProcessor zUpsert(String url, Map<String, String> routeParams, Map<String, Object> queryParams, T payload) throws Exception;
+    <T> IResultProcessor zUpsert(String eid, Map<String, Object> queryParams, T payload) throws Exception;
 
-    <T> IResultProcessor zUpsert(String url, Map<String, String> routeParams, Map<String, Object> queryParams, List<T> payloads) throws Exception;
+    <T> IResultProcessor zUpsert(String eid, Map<String, Object> queryParams, List<T> payloads) throws Exception;
 
     void zDelete(String url, Map<String, String> routeParams, Map<String, Object> queryParams) throws Exception;
 

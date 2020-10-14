@@ -217,13 +217,21 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 	}
 
 	@Override
-	public <T> IResultProcessor zUpsert(String url, Map<String, String> routeParams, Map<String, Object> queryParams, T payload) throws Exception {
-		return zPost(url, routeParams, queryParams, payload);
+	public <T> IResultProcessor zUpsert(String eid, Map<String, Object> queryParams, T payload) throws Exception {
+
+		List<T> payloads = new ArrayList<>();
+		payloads.add(payload);
+
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zPost("/zupsert/{eid}", routeParams, queryParams, payloads);
 	}
 
 	@Override
-	public <T> IResultProcessor zUpsert(String url, Map<String, String> routeParams, Map<String, Object> queryParams, List<T> payloads) throws Exception {
-		return zPost(url, routeParams, queryParams, payloads);
+	public <T> IResultProcessor zUpsert(String eid, Map<String, Object> queryParams, List<T> payloads) throws Exception {
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zPost("/zupsert/{eid}", routeParams, queryParams, payloads);
 	}
 
 	@Override
@@ -564,9 +572,8 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 	public String zexecuteJSON(String eid, Map<String, Object> queryParams) throws Exception {
 		Map<String, String> routeParams = new HashMap<>();
 		routeParams.put("eid", eid);
-		return zGet("/zexecute/{eid}", routeParams, queryParams, null).parseToJSONString();
+		return zPost("/zexecute/{eid}", routeParams, queryParams, null).parseToJSONString();
 	}
-
 
 	//endregion
 
