@@ -129,6 +129,52 @@ public class ResultProcessor implements IResultProcessor {
     }
 
     @Override
+    public LinkedHashMap<String, Object> parseToLinkedHashMap() throws Exception {
+        Gson gson = getGsonWithSerializerDeserializer();
+
+        JsonElement rootJsonElement = getRootElement(httpResponse.get()); // This will extract the root JSON Element
+        if (rootJsonElement == null || rootJsonElement.isJsonNull())
+        {
+            return null;
+        }
+
+        if (rootJsonElement.isJsonPrimitive())
+        {
+            throw new Exception("Cannot convert JSON Primitive to Map<String, Object>");
+        }
+
+        if (rootJsonElement.isJsonArray())
+        {
+            throw new Exception("Cannot convert JSON Array to Map<String, Object>");
+        }
+
+        if (rootJsonElement.isJsonObject())
+        {
+            bubbleAnyDbFlareErrorMessages(rootJsonElement);
+            JsonObject root = rootJsonElement.getAsJsonObject();
+            if (root == null || root.isJsonNull())
+            {
+                return null;
+            }
+
+            if (root.has("result"))
+            {
+                JsonObject data = root.getAsJsonObject("result");
+                return gson.fromJson(data, new TypeToken<Map<String, Object>>()
+                {
+                }.getType());
+            }
+            else
+            {
+                return gson.fromJson(root, new TypeToken<LinkedHashMap<String, Object>>()
+                {
+                }.getType());
+            }
+        }
+        return null;
+    }
+
+    @Override
     public <T> List<T> parseToList(Type typeOfT) throws Exception {
         Gson gson = getGsonWithSerializerDeserializer();
 
@@ -146,7 +192,7 @@ public class ResultProcessor implements IResultProcessor {
         if (rootJsonElement.isJsonArray())
         {
             JsonArray root = rootJsonElement.getAsJsonArray();
-            return gson.fromJson(root, typeOfT);
+            return gson.fromJson(root, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
         }
 
         if (rootJsonElement.isJsonObject())
@@ -192,7 +238,7 @@ public class ResultProcessor implements IResultProcessor {
             if (root != null && !root.isJsonNull())
             {
                 pagination.setTotal(root.size());
-                return gson.fromJson(root, typeOfT);
+                return gson.fromJson(root, TypeToken.getParameterized(ArrayList.class, typeOfT).getType());
             }
         }
 
@@ -445,25 +491,4 @@ public class ResultProcessor implements IResultProcessor {
             return new JsonPrimitive(Base64.getEncoder().encodeToString(src));
         }
     }
-
-    /*private static class BooleanTypeAdapter implements JsonSerializable, JsonDeserializer<Boolean> {
-
-        @Override
-        public void serialize(JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-
-        }
-
-        @Override
-        public void serializeWithType(JsonGenerator jsonGenerator, SerializerProvider serializerProvider, TypeSerializer typeSerializer) throws IOException {
-
-        }
-
-        @Override
-        public Boolean deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-            if(jsonElement != null) {
-                jsonElement.getAs
-            }
-            return false;
-        }
-    }*/
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.gson.*;
 
 import java.lang.reflect.Type;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,8 @@ public interface IResultProcessor
 	<T> T parse(IObjectAssembler objectAssembler) throws Exception;
 
 	Map<String, Object> parseToMap() throws Exception;
+
+	LinkedHashMap<String, Object> parseToLinkedHashMap() throws Exception;
 
 	<T> List<T> parseToList(Type typeOfT) throws Exception;
 

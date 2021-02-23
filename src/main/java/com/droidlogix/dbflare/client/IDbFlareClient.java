@@ -4,6 +4,7 @@ import com.droidlogix.dbflare.client.models.Pagination;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -100,6 +101,12 @@ public interface IDbFlareClient
 	 * @throws Exception
 	 */
 	<T> List<Map<String, Object>> zupdate(String eid, Map<String, Object> urlParameters, List<T> item) throws Exception;
+
+	<T> IResultProcessor zUpsert(String eid, Map<String, Object> queryParams, T payload) throws Exception;
+
+	<T> IResultProcessor zUpsert(String eid, Map<String, Object> queryParams, List<T> payloads) throws Exception;
+
+	<T> LinkedHashMap<String, Object> zBatch(LinkedHashMap<String, T> payloads) throws Exception;
 
 	/**
 	 * Delete a record and expect the deleted record as a result

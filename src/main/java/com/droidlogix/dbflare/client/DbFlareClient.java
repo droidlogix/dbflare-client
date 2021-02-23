@@ -72,6 +72,45 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 
 	//endregion
 
+	//region ZBATCH PAYLOAD BUILDER
+
+	public static class BatchPayloadBuilder {
+		private LinkedHashMap<String, Object> combinedPayloads;
+
+		public <T> BatchPayloadBuilder add(String key, List<T> payloads) throws Exception {
+			if(combinedPayloads == null) {
+				combinedPayloads = new LinkedHashMap<>();
+			}
+
+			this.combinedPayloads.put(key, payloads);
+			return this;
+		}
+
+		public <T> BatchPayloadBuilder add(String key, T payload) throws Exception {
+			if(combinedPayloads == null) {
+				combinedPayloads = new LinkedHashMap<>();
+			}
+
+			if(combinedPayloads.get(key) == null) {
+				List<T> tmp = new ArrayList<>();
+				tmp.add(payload);
+				this.combinedPayloads.put(key, tmp);
+			} else {
+				List<T> tmp = (List<T>) combinedPayloads.get(key);
+				tmp.add(payload);
+				this.combinedPayloads.put(key, tmp);
+			}
+
+			return this;
+		}
+
+		public LinkedHashMap<String, Object> build() {
+			return this.combinedPayloads;
+		}
+	}
+
+	//endregion
+
 	//region CONSTRUCTOR
 
 	private DbFlareClient(ObjectMapper objectMapper, String baseURL, boolean isKeyRequired, String apiKey)
@@ -232,6 +271,11 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 		Map<String, String> routeParams = new HashMap<>();
 		routeParams.put("eid", eid);
 		return zPost("/zupsert/{eid}", routeParams, queryParams, payloads);
+	}
+
+	@Override
+	public <T> LinkedHashMap<String, Object> zBatch(LinkedHashMap<String, T> payload) throws Exception {
+		return zPost("/zbatch", null, null, payload).parseToLinkedHashMap();
 	}
 
 	@Override
