@@ -455,6 +455,13 @@ public class DbFlareClient implements IDbFlareClient, IRestClient
 	}
 
 	@Override
+	public Map<String, Object> zgetOne(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection) throws Exception {
+		Map<String, String> routeParams = new HashMap<>();
+		routeParams.put("eid", eid);
+		return zGet("/zget/{eid}",routeParams, queryParams, queryParamsCollection).parseToMap();
+	}
+
+	@Override
 	public <T> T zgetOne(String eid, Map<String, Object> queryParams, Type typeOfT) throws Exception
 	{
 		Map<String, String> routeParams = new HashMap<>();

@@ -125,6 +125,8 @@ public interface IDbFlareClient
 	 */
 	Map<String, Object> zgetOne(String eid, Map<String, Object> queryParams) throws Exception;
 
+	Map<String, Object> zgetOne(String eid, Map<String, Object> queryParams, Map<String, Collection<?>> queryParamsCollection) throws Exception;
+
 	/**
 	 * Get result as Object of T
 	 * @param eid
